@@ -47,17 +47,25 @@
       letter-spacing: 0.1px;
     }
     #map {
-      height: 100%;
-      width: calc(100% - 320px);
-      float: right;
-      border-radius: 24px 0 0 24px;
-      box-shadow: var(--main-shadow);
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 1;
+      border-radius: 0;
+      box-shadow: none;
       margin: 0;
       background: var(--main-bg);
       transition: background 0.3s;
       cursor: var(--map-cursor, auto);
     }
-    .side-panel {
+    /* عندما يكون السايد بانل مخفي، اجعل الخريطة بعرض كامل */
+    .side-panel.hidden ~ #map {
+      width: 100vw;
+      border-radius: 0;
+    }
+    .side-panel, .control-buttons.left {
       width: 320px;
       height: 100%;
       background: var(--main-panel);
@@ -70,8 +78,28 @@
       border-radius: 0 24px 24px 0;
       backdrop-filter: blur(8px);
       -webkit-backdrop-filter: blur(8px);
-      transition: background 0.3s;
-      color: var(--main-text);
+      transition: background 0.3s, right 0.3s;
+      right: 0;
+      position: fixed;
+      top: 0;
+      z-index: 10001;
+    }
+    .side-panel.hidden {
+      right: -340px;
+    }
+    .control-buttons.left {
+      left: 0;
+      right: auto;
+      top: 0;
+      height: 100%;
+      border-radius: 24px 0 0 24px;
+      box-shadow: 8px 0 32px var(--main-shadow);
+      background: var(--main-panel);
+      padding-top: 48px;
+      transition: background 0.3s, left 0.3s;
+    }
+    .control-buttons.left.hidden {
+      left: -340px;
     }
     .side-panel h2 {
       margin: 0 0 18px 0;
@@ -192,7 +220,7 @@
       background: var(--main-red-dark);
     }
     .control-buttons {
-      position: absolute;
+      position: fixed; /* تغيير من absolute إلى fixed */
       top: 18px;
       z-index: 9999;
       display: flex;
@@ -210,8 +238,18 @@
       transition: background 0.3s;
     }
     .control-buttons.left {
-      left: 18px;
+      left: 0;
       right: auto;
+      top: 0;
+      height: 100%;
+      border-radius: 24px 0 0 24px;
+      box-shadow: 8px 0 32px var(--main-shadow);
+      background: var(--main-panel);
+      padding-top: 48px;
+      transition: background 0.3s, left 0.3s;
+    }
+    .control-buttons.left.hidden {
+      left: -340px;
     }
     .button-group {
       display: flex;
@@ -333,38 +371,6 @@
     .current-area-box .delete-current-btn:hover {
       background: var(--main-red-dark);
     }
-    .maptype-btn {
-      position: absolute;
-      left: 18px;
-      bottom: 18px;
-      z-index: 10001;
-      background: rgba(245,247,255,0.85);
-      color: var(--main-blue);
-      border: none;
-      border-radius: 10px;
-      width: 170px;
-      font-size: 15px;
-      box-shadow: 0 2px 6px var(--main-shadow);
-      cursor: pointer;
-      padding: 10px 12px;
-      transition: background 0.2s, color 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .maptype-btn select {
-      width: 100%;
-      font-size: 15px;
-      border: none;
-      background: transparent;
-      color: var(--main-blue);
-      outline: none;
-      direction: rtl;
-      background: none;
-    }
-    .maptype-btn select:focus {
-      background: var(--main-border);
-    }
     /* كيرسر دبوس */
     .cursor-pin {
       cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><path d="M16 2C10.477 2 6 6.477 6 12c0 7.732 8.06 17.09 8.406 17.469a1 1 0 0 0 1.188 0C17.94 29.09 26 19.732 26 12c0-5.523-4.477-10-10-10zm0 13.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" fill="%230078d4" stroke="white" stroke-width="2"/></svg>') 16 32, pointer !important;
@@ -374,15 +380,100 @@
       cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="12" fill="%23fff" stroke="%230078d4" stroke-width="3"/></svg>') 16 16, pointer !important;
     }
     @media (max-width: 900px) {
-      .side-panel { width: 100vw; position: absolute; z-index: 10001; }
-      #map { width: 100vw; border-radius: 0; }
-      .control-buttons, .maptype-btn { left: 10px; width: 90vw; }
+      .side-panel, .control-buttons.left { width: 100vw; }
+      .side-panel.hidden { right: -100vw; }
+      .control-buttons.left.hidden { left: -100vw; }
+      .toggle-panel-btn.right { right: 10px; }
+      .toggle-panel-btn.left { left: 10px; }
+    }
+    /* زر إظهار البانل اليساري */
+    .toggle-panel-btn.left, #toggleLeftPanelBtn {
+      position: fixed !important;
+      top: 50%;
+      left: 0;
+      right: auto;
+      transform: translateY(-50%) translateX(-50%);
+      z-index: 10010;
+      background: var(--main-blue);
+      color: #fff;
+      border: none;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 16px;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px var(--main-blue-dark)22;
+      transition: left 0.3s, opacity 0.3s;
+      opacity: 1;
+      display: block;
+    }
+    /* زر إظهار البانل اليميني */
+    .toggle-panel-btn.right, #toggleRightPanelBtn {
+      position: fixed !important;
+      top: 50%;
+      right: 0;
+      left: auto;
+      transform: translateY(-50%) translateX(50%);
+      z-index: 10010;
+      background: var(--main-blue);
+      color: #fff;
+      border: none;
+      border-radius: 8px 0 0 8px;
+      padding: 10px 16px;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px var(--main-blue-dark)22;
+      transition: right 0.3s, opacity 0.3s;
+      opacity: 1;
+      display: block;
+    }
+    /* زر إخفاء البانل اليساري */
+    #hideLeftPanelBtn {
+      position: fixed !important;
+      top: 50%;
+      left: 320px;
+      right: auto;
+      transform: translateY(-50%) translateX(-50%);
+      z-index: 10010;
+      background: var(--main-blue);
+      color: #fff;
+      border: none;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 16px;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px var(--main-blue-dark)22;
+      transition: left 0.3s, opacity 0.3s;
+      opacity: 1;
+      display: block;
+    }
+    /* زر إخفاء البانل اليميني */
+    #hideRightPanelBtn {
+      position: fixed !important;
+      top: 50%;
+      right: 320px;
+      left: auto;
+      transform: translateY(-50%) translateX(50%);
+      z-index: 10010;
+      background: var(--main-blue);
+      color: #fff;
+      border: none;
+      border-radius: 8px 0 0 8px;
+      padding: 10px 16px;
+      font-size: 18px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px var(--main-blue-dark)22;
+      transition: right 0.3s, opacity 0.3s;
+      opacity: 1;
+      display: block;
     }
   </style>
 </head>
 <body>
-  <div class="control-buttons left">
-     <div style="margin-bottom:12px;display:flex;gap:6px;align-items:center;">
+  <button id="toggleLeftPanelBtn" class="toggle-panel-btn left">⏪</button>
+  <button id="toggleRightPanelBtn" class="toggle-panel-btn right">⏩</button>
+  <div class="control-buttons left hidden">
+    <button id="hideLeftPanelBtn">⏪</button>
+    <div style="margin-bottom:12px;display:flex;gap:6px;align-items:center;">
     <input id="citySearchInput" type="text" placeholder="ابحث عن مدينة..." style="flex:1;padding:7px 10px;border-radius:8px;border:1px solid #d0d7e6;font-size:15px;">
     <button id="citySearchBtn" style="background:var(--main-blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:15px;cursor:pointer;">🔍</button>
   </div>
@@ -402,9 +493,12 @@
       <button id="writeBtn" title="إضافة نص على الخريطة">
         <span style="font-size:20px;">✏️</span> إضافة نص
       </button>
-      <button id="themeBtn" title="تغيير الثيم">
-        <span style="font-size:20px;">🌙</span> تغيير الثيم
-      </button>
+      <div style="margin-top:6px;">
+        <select id="mapTypeSelect" title="تغيير نوع الخريطة" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #d0d7e6;font-size:15px;background:var(--main-bg);color:var(--main-blue);">
+          <option value="osm">خريطة عادية</option>
+          <option value="satellite">قمر صناعي</option>
+        </select>
+      </div>
     </div>
     <div class="icon-group">
       <button onclick="addSymbol('tank')">
@@ -415,13 +509,8 @@
       </button>
     </div>
   </div>
-  <div class="maptype-btn">
-    <select id="mapTypeSelect" title="تغيير نوع الخريطة">
-      <option value="osm">خريطة عادية</option>
-      <option value="satellite">قمر صناعي</option>
-    </select>
-  </div>
-  <div class="side-panel">
+  <div class="side-panel hidden">
+    <button id="hideRightPanelBtn">⏩</button>
     <h2>التحديدات الحالية</h2>
     <div id="polygon-list">
       <p>لا توجد تحديدات حتى الآن</p>
@@ -469,27 +558,21 @@
       artillery: "https://cdn-icons-png.flaticon.com/512/2693/2693577.png"
     };
 
-    // زر تغيير الثيم
-    document.getElementById('themeBtn').onclick = function() {
-      const html = document.documentElement;
-      if (html.getAttribute('data-theme') === 'dark') {
-        html.removeAttribute('data-theme');
-        this.innerHTML = '<span style="font-size:20px;">🌙</span> تغيير الثيم';
-      } else {
-        html.setAttribute('data-theme', 'dark');
-        this.innerHTML = '<span style="font-size:20px;">☀️</span> تغيير الثيم';
-      }
-    };
     // زر تغيير نوع الخريطة
-    document.getElementById('mapTypeSelect').onchange = function() {
-      if (this.value === "osm") {
-        map.removeLayer(satelliteLayer);
-        map.addLayer(osmLayer);
-      } else {
-        map.removeLayer(osmLayer);
-        map.addLayer(satelliteLayer);
-      }
-    };
+    const mapTypeSelect = document.getElementById('mapTypeSelect');
+    if (mapTypeSelect) {
+      mapTypeSelect.addEventListener('change', function() {
+        // إزالة جميع الطبقات الأساسية أولاً
+        if (map.hasLayer(osmLayer)) map.removeLayer(osmLayer);
+        if (map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
+        // أضف الطبقة المطلوبة فقط
+        if (this.value === "osm") {
+          map.addLayer(osmLayer);
+        } else if (this.value === "satellite") {
+          map.addLayer(satelliteLayer);
+        }
+      });
+    }
     // زر الكتابة على الخريطة (يضيف نص افتراضي مباشرة)
     document.getElementById('writeBtn').onclick = function() {
       const center = map.getCenter();
@@ -1018,9 +1101,8 @@
     });
     window.clearCurrentSelection = clearCurrentSelection;
     updatePolygonList();
-// ...existing code...
 
-// دالة البحث عن مدينة باستخدام Overpass API ورسم حدودها
+
 async function searchAndDrawCityBoundary(cityName, map) {
   if (window.cityLayer) {
     map.removeLayer(window.cityLayer);
@@ -1147,6 +1229,27 @@ document.getElementById('citySearchInput').addEventListener('keydown', function(
     document.getElementById('citySearchBtn').click();
   }
 });
+document.getElementById('toggleLeftPanelBtn').onclick = function() {
+  document.querySelector('.control-buttons.left').classList.remove('hidden');
+  this.style.display = 'none';
+};
+document.getElementById('hideLeftPanelBtn').onclick = function() {
+  document.querySelector('.control-buttons.left').classList.add('hidden');
+  document.getElementById('toggleLeftPanelBtn').style.display = '';
+};
+document.getElementById('toggleRightPanelBtn').onclick = function() {
+  document.querySelector('.side-panel').classList.remove('hidden');
+  this.style.display = 'none';
+};
+document.getElementById('hideRightPanelBtn').onclick = function() {
+  document.querySelector('.side-panel').classList.add('hidden');
+  document.getElementById('toggleRightPanelBtn').style.display = '';
+};
+// عند البداية، أخفِ أزرار الإظهار
+window.onload = function() {
+  document.getElementById('toggleLeftPanelBtn').style.display = '';
+  document.getElementById('toggleRightPanelBtn').style.display = '';
+};
   </script>
 </body>
 </html>
