@@ -82,7 +82,7 @@
       right: 0;
       position: fixed;
       top: 0;
-      z-index: 10001;
+      z-index: 10002;
     }
     .side-panel.hidden {
       right: -340px;
@@ -247,6 +247,7 @@
       background: var(--main-panel);
       padding-top: 48px;
       transition: background 0.3s, left 0.3s;
+      z-index: 10002;
     }
     .control-buttons.left.hidden {
       left: -340px;
@@ -380,91 +381,111 @@
       cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="12" fill="%23fff" stroke="%230078d4" stroke-width="3"/></svg>') 16 16, pointer !important;
     }
     @media (max-width: 900px) {
-      .side-panel, .control-buttons.left { width: 100vw; }
-      .side-panel.hidden { right: -100vw; }
-      .control-buttons.left.hidden { left: -100vw; }
-      .toggle-panel-btn.right { right: 10px; }
-      .toggle-panel-btn.left { left: 10px; }
+      .side-panel, .control-buttons.left {
+        width: 100vw !important;
+        min-width: 0 !important;
+        max-width: 100vw !important;
+        border-radius: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding: 18px 4vw 12px 4vw !important;
+        box-shadow: 0 8px 32px var(--main-shadow);
+        z-index: 10002 !important;
+      }
+      .side-panel.hidden {
+        right: -100vw !important;
+      }
+      .control-buttons.left.hidden {
+        left: -100vw !important;
+      }
+      .toggle-panel-btn.left, #toggleLeftPanelBtn {
+        left: 0 !important;
+        right: auto !important;
+        top: 50% !important;
+        transform: translateY(-50%) translateX(-50%) !important;
+        z-index: 10003 !important;
+      }
+      .toggle-panel-btn.right, #toggleRightPanelBtn {
+        right: 0 !important;
+        left: auto !important;
+        top: 50% !important;
+        transform: translateY(-50%) translateX(50%) !important;
+        z-index: 10003 !important;
+      }
     }
-    /* زر إظهار البانل اليساري */
-    .toggle-panel-btn.left, #toggleLeftPanelBtn {
-      position: fixed !important;
+    @media (max-width: 600px) {
+      .side-panel, .control-buttons.left {
+        width: 100vw !important;
+        min-width: 0 !important;
+        max-width: 100vw !important;
+        border-radius: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        padding: 8px 1vw 6px 1vw !important;
+        z-index: 10002 !important;
+      }
+      .side-panel.hidden {
+        right: -100vw !important;
+      }
+      .control-buttons.left.hidden {
+        left: -100vw !important;
+      }
+      .toggle-panel-btn.left, #toggleLeftPanelBtn {
+        left: 0 !important;
+        right: auto !important;
+        top: 50% !important;
+        transform: translateY(-50%) translateX(-50%) !important;
+        z-index: 10003 !important;
+      }
+      .toggle-panel-btn.right, #toggleRightPanelBtn {
+        right: 0 !important;
+        left: auto !important;
+        top: 50% !important;
+        transform: translateY(-50%) translateX(50%) !important;
+        z-index: 10003 !important;
+      }
+    }
+    .toggle-panel-btn {
+      position: fixed;
       top: 50%;
+      transform: translateY(-50%);
+      z-index: 10003;
+      background: var(--main-panel);
+      border: 1px solid var(--main-border);
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 2px 8px var(--main-shadow);
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+    .toggle-panel-btn.left {
+      left: 0;
+    }
+    .toggle-panel-btn.right {
+      right: 0;
+    }
+    .control-buttons.left {
+      z-index: 10002;
+    }
+    .side-panel {
+      z-index: 10002;
+    }
+    .toggle-panel-btn.left.hide-btn {
       left: 0;
       right: auto;
+      top: 50%;
       transform: translateY(-50%) translateX(-50%);
-      z-index: 10010;
-      background: var(--main-blue);
-      color: #fff;
-      border: none;
-      border-radius: 0 8px 8px 0;
-      padding: 10px 16px;
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: 0 2px 8px var(--main-blue-dark)22;
-      transition: left 0.3s, opacity 0.3s;
-      opacity: 1;
-      display: block;
+      z-index: 10004;
+      display: none;
+      position: fixed;
     }
-    /* زر إظهار البانل اليميني */
-    .toggle-panel-btn.right, #toggleRightPanelBtn {
-      position: fixed !important;
-      top: 50%;
-      right: 0;
-      left: auto;
-      transform: translateY(-50%) translateX(50%);
-      z-index: 10010;
-      background: var(--main-blue);
-      color: #fff;
-      border: none;
-      border-radius: 8px 0 0 8px;
-      padding: 10px 16px;
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: 0 2px 8px var(--main-blue-dark)22;
-      transition: right 0.3s, opacity 0.3s;
-      opacity: 1;
-      display: block;
-    }
-    /* زر إخفاء البانل اليساري */
-    #hideLeftPanelBtn {
-      position: fixed !important;
-      top: 50%;
-      left: 320px;
-      right: auto;
-      transform: translateY(-50%) translateX(-50%);
-      z-index: 10010;
-      background: var(--main-blue);
-      color: #fff;
-      border: none;
-      border-radius: 0 8px 8px 0;
-      padding: 10px 16px;
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: 0 2px 8px var(--main-blue-dark)22;
-      transition: left 0.3s, opacity 0.3s;
-      opacity: 1;
-      display: block;
-    }
-    /* زر إخفاء البانل اليميني */
-    #hideRightPanelBtn {
-      position: fixed !important;
-      top: 50%;
-      right: 320px;
-      left: auto;
-      transform: translateY(-50%) translateX(50%);
-      z-index: 10010;
-      background: var(--main-blue);
-      color: #fff;
-      border: none;
-      border-radius: 8px 0 0 8px;
-      padding: 10px 16px;
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: 0 2px 8px var(--main-blue-dark)22;
-      transition: right 0.3s, opacity 0.3s;
-      opacity: 1;
-      display: block;
+    .control-buttons.left:not(.hidden) ~ .toggle-panel-btn.left.hide-btn {
+      display: flex !important;
     }
   </style>
 </head>
@@ -472,7 +493,6 @@
   <button id="toggleLeftPanelBtn" class="toggle-panel-btn left">⏪</button>
   <button id="toggleRightPanelBtn" class="toggle-panel-btn right">⏩</button>
   <div class="control-buttons left hidden">
-    <button id="hideLeftPanelBtn">⏪</button>
     <div style="margin-bottom:12px;display:flex;gap:6px;align-items:center;">
     <input id="citySearchInput" type="text" placeholder="ابحث عن مدينة..." style="flex:1;padding:7px 10px;border-radius:8px;border:1px solid #d0d7e6;font-size:15px;">
     <button id="citySearchBtn" style="background:var(--main-blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:15px;cursor:pointer;">🔍</button>
@@ -522,6 +542,7 @@
     <button id="changeColorBtn">تغيير اللون</button>
     <button id="deletePolygonBtn">حذف المضلع</button>
   </div>
+  <button id="hideLeftPanelBtn" class="toggle-panel-btn left hide-btn">⏪</button>
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
   <script src="https://unpkg.com/leaflet.browser.print/dist/leaflet.browser.print.min.js"></script>
@@ -738,7 +759,6 @@
         // زر إعادة التعديل
         const editBtn = document.createElement('button');
         editBtn.className = 'edit-btn';
-        editBtn.textContent = 'إعادة تعديل المضلع';
         editBtn.onclick = () => {
           if (currentPolygonLayer) {
             map.removeLayer(currentPolygonLayer);
@@ -1229,26 +1249,45 @@ document.getElementById('citySearchInput').addEventListener('keydown', function(
     document.getElementById('citySearchBtn').click();
   }
 });
-document.getElementById('toggleLeftPanelBtn').onclick = function() {
-  document.querySelector('.control-buttons.left').classList.remove('hidden');
-  this.style.display = 'none';
+// إصلاح منطق إظهار/إخفاء البانلات وأزرارها ليعتمد فقط على الكلاسات (hidden)، وإزالة أي display مباشر
+// زر إظهار البانل الأيسر
+const toggleLeftPanelBtn = document.getElementById('toggleLeftPanelBtn');
+const hideLeftPanelBtn = document.getElementById('hideLeftPanelBtn');
+const leftPanel = document.querySelector('.control-buttons.left');
+toggleLeftPanelBtn.onclick = function() {
+  leftPanel.classList.remove('hidden');
+  toggleLeftPanelBtn.classList.add('hidden');
+  hideLeftPanelBtn.classList.remove('hidden');
 };
-document.getElementById('hideLeftPanelBtn').onclick = function() {
-  document.querySelector('.control-buttons.left').classList.add('hidden');
-  document.getElementById('toggleLeftPanelBtn').style.display = '';
+hideLeftPanelBtn.onclick = function(e) {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  leftPanel.classList.add('hidden');
+  toggleLeftPanelBtn.classList.remove('hidden');
+  hideLeftPanelBtn.classList.add('hidden');
 };
-document.getElementById('toggleRightPanelBtn').onclick = function() {
-  document.querySelector('.side-panel').classList.remove('hidden');
-  this.style.display = 'none';
+// زر إظهار البانل الأيمن
+const toggleRightPanelBtn = document.getElementById('toggleRightPanelBtn');
+const hideRightPanelBtn = document.getElementById('hideRightPanelBtn');
+const rightPanel = document.querySelector('.side-panel');
+toggleRightPanelBtn.onclick = function() {
+  rightPanel.classList.remove('hidden');
+  toggleRightPanelBtn.classList.add('hidden');
 };
-document.getElementById('hideRightPanelBtn').onclick = function() {
-  document.querySelector('.side-panel').classList.add('hidden');
-  document.getElementById('toggleRightPanelBtn').style.display = '';
+hideRightPanelBtn.onclick = function(e) {
+  if (e) e.preventDefault();
+  rightPanel.classList.add('hidden');
+  toggleRightPanelBtn.classList.remove('hidden');
 };
-// عند البداية، أخفِ أزرار الإظهار
+// عند البداية، أخفِ البانلات وأظهر أزرار الإظهار فقط
 window.onload = function() {
-  document.getElementById('toggleLeftPanelBtn').style.display = '';
-  document.getElementById('toggleRightPanelBtn').style.display = '';
+  leftPanel.classList.add('hidden');
+  rightPanel.classList.add('hidden');
+  toggleLeftPanelBtn.classList.remove('hidden');
+  toggleRightPanelBtn.classList.remove('hidden');
+  hideLeftPanelBtn.classList.add('hidden');
 };
   </script>
 </body>
