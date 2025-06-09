@@ -1,1294 +1,1847 @@
 <!DOCTYPE html>
-<html lang="ar">
+<html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>خريطة هندسية تفاعلية</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet.browser.print/dist/leaflet.browser.print.min.css" />
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&display=swap');
-    :root {
-      --main-bg: #f7fafd;
-      --main-panel: #fff;
-      --main-border: #e3e9f7;
-      --main-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
-      --main-text: #222;
-      --main-blue: #0078d4;
-      --main-blue-dark: #005fa3;
-      --main-red: #e81123;
-      --main-red-dark: #b91d2b;
-      --main-label-bg: rgba(255,255,255,0.95);
-    }
-    [data-theme="dark"] {
-      --main-bg: #23272e;
-      --main-panel: #23272e;
-      --main-border: #2d323a;
-      --main-shadow: 0 8px 32px 0 rgba(0,0,0,0.25);
-      --main-text: #f7fafd;
-      --main-blue: #60aaff;
-      --main-blue-dark: #0078d4;
-      --main-red: #e81123;
-      --main-red-dark: #b91d2b;
-      --main-label-bg: rgba(40,44,52,0.95);
-    }
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: 'Cairo', 'Segoe UI Variable', 'Segoe UI', 'Tahoma', Geneva, Verdana, sans-serif;
-      direction: rtl;
-      background: linear-gradient(135deg, var(--main-bg) 0%, var(--main-panel) 100%);
-      overflow: hidden;
-      color: var(--main-text);
-      transition: background 0.3s;
-    }
-    * {
-      font-family: 'Cairo', 'Segoe UI Variable', 'Segoe UI', 'Tahoma', Geneva, Verdana, sans-serif !important;
-      letter-spacing: 0.1px;
-    }
-    #map {
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 100vw;
-      height: 100vh;
-      z-index: 1;
-      border-radius: 0;
-      box-shadow: none;
-      margin: 0;
-      background: var(--main-bg);
-      transition: background 0.3s;
-      cursor: var(--map-cursor, auto);
-    }
-    /* عندما يكون السايد بانل مخفي، اجعل الخريطة بعرض كامل */
-    .side-panel.hidden ~ #map {
-      width: 100vw;
-      border-radius: 0;
-    }
-    .side-panel, .control-buttons.left {
-      width: 320px;
-      height: 100%;
-      background: var(--main-panel);
-      box-shadow: -8px 0 32px var(--main-shadow);
-      overflow-y: auto;
-      padding: 24px 24px 18px 24px;
-      box-sizing: border-box;
-      float: right;
-      direction: rtl;
-      border-radius: 0 24px 24px 0;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      transition: background 0.3s, right 0.3s;
-      right: 0;
-      position: fixed;
-      top: 0;
-      z-index: 10002;
-    }
-    .side-panel.hidden {
-      right: -340px;
-    }
-    .control-buttons.left {
-      left: 0;
-      right: auto;
-      top: 0;
-      height: 100%;
-      border-radius: 24px 0 0 24px;
-      box-shadow: 8px 0 32px var(--main-shadow);
-      background: var(--main-panel);
-      padding-top: 48px;
-      transition: background 0.3s, left 0.3s;
-    }
-    .control-buttons.left.hidden {
-      left: -340px;
-    }
-    .side-panel h2 {
-      margin: 0 0 18px 0;
-      font-weight: 800;
-      font-size: 22px;
-      color: var(--main-text);
-      letter-spacing: 0.5px;
-      border-bottom: 1px solid var(--main-border);
-      padding-bottom: 10px;
-      text-shadow: 0 2px 8px var(--main-bg);
-    }
-    .polygon-item, .text-item {
-      border: 1px solid var(--main-border);
-      border-radius: 16px;
-      padding: 16px 14px 12px 14px;
-      margin-bottom: 18px;
-      background: var(--main-panel);
-      box-shadow: 0 4px 16px var(--main-shadow);
-      transition: box-shadow 0.2s, background 0.3s;
-      position: relative;
-      min-height: 48px;
-    }
-    .polygon-item label, .text-item label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-      color: var(--main-text);
-      font-size: 15px;
-    }
-    .polygon-item input[type="text"],
-    .polygon-item input[type="color"],
-    .polygon-item input[type="range"],
-    .text-item input[type="text"],
-    .text-item input[type="color"] {
-      width: 100%;
-      padding: 7px 10px;
-      font-size: 15px;
-      border: 1px solid #d0d7e6;
-      border-radius: 8px;
-      box-sizing: border-box;
-      outline-offset: 2px;
-      margin-bottom: 8px;
-      background: var(--main-bg);
-      color: var(--main-text);
-      transition: border 0.2s;
-    }
-    .polygon-item input[type="text"]:focus,
-    .text-item input[type="text"]:focus {
-      border: 1.5px solid var(--main-blue);
-    }
-    .polygon-item input[type="color"],
-    .text-item input[type="color"] {
-      padding: 0;
-      height: 36px;
-      border: none;
-      background: none;
-      margin-bottom: 12px;
-      width: 40px;
-      display: inline-block;
-      vertical-align: middle;
-    }
-    .polygon-item input[type="range"] {
-      margin-bottom: 12px;
-      width: 90%;
-      display: inline-block;
-      vertical-align: middle;
-    }
-    .polygon-item .area-label {
-      display: block;
-      font-size: 15px;
-      color: var(--main-blue);
-      font-weight: 700;
-      margin-bottom: 10px;
-      margin-top: 2px;
-    }
-    .polygon-item .show-name-label {
-      font-size: 14px;
-      font-weight: 500;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .polygon-item .edit-btn, .text-item .edit-btn {
-      margin-top: 8px;
-      width: 100%;
-      padding: 10px;
-      background: var(--main-blue);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 15px;
-      transition: background-color 0.3s;
-      box-shadow: 0 2px 8px var(--main-blue-dark)22;
-      letter-spacing: 0.5px;
-    }
-    .polygon-item .edit-btn:hover, .text-item .edit-btn:hover {
-      background: var(--main-blue-dark);
-    }
-    .polygon-item button, .text-item button {
-      margin-top: 8px;
-      width: 100%;
-      padding: 10px;
-      background: var(--main-red);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      font-weight: 700;
-      font-size: 15px;
-      transition: background-color 0.3s;
-      box-shadow: 0 2px 8px var(--main-red-dark)22;
-      letter-spacing: 0.5px;
-    }
-    .polygon-item button:hover, .text-item button:hover {
-      background: var(--main-red-dark);
-    }
-    .control-buttons {
-      position: fixed; /* تغيير من absolute إلى fixed */
-      top: 18px;
-      z-index: 9999;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      background: rgba(255 255 255 / 0.7);
-      padding: 14px;
-      border-radius: 18px;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 8px 24px var(--main-shadow);
-      user-select: none;
-      width: 170px;
-      border: 1px solid var(--main-border);
-      transition: background 0.3s;
-    }
-    .control-buttons.left {
-      left: 0;
-      right: auto;
-      top: 0;
-      height: 100%;
-      border-radius: 24px 0 0 24px;
-      box-shadow: 8px 0 32px var(--main-shadow);
-      background: var(--main-panel);
-      padding-top: 48px;
-      transition: background 0.3s, left 0.3s;
-      z-index: 10002;
-    }
-    .control-buttons.left.hidden {
-      left: -340px;
-    }
-    .button-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    .icon-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .control-buttons button {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      font-size: 15px;
-      border: none;
-      border-radius: 10px;
-      background: rgba(245,247,255,0.85);
-      color: var(--main-text);
-      cursor: pointer;
-      font-weight: 600;
-      box-shadow: 0 2px 6px var(--main-shadow);
-      transition: background-color 0.25s, box-shadow 0.25s;
-      text-align: center;
-      outline: none;
-    }
-    .control-buttons button.active {
-      background: var(--main-blue);
-      color: #fff;
-    }
-    .control-buttons button:hover {
-      background: var(--main-border);
-      box-shadow: 0 4px 12px var(--main-shadow);
-    }
-    /* دبوس حقيقي */
-    .custom-pin {
-      width: 32px;
-      height: 32px;
-      background: none;
-      border: none;
-      box-shadow: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      color: var(--main-blue);
-      position: relative;
-    }
-    .custom-pin svg {
-      width: 32px;
-      height: 32px;
-      display: block;
-    }
-    /* القائمة عند زر اليمين */
-    #context-menu {
-      position: absolute;
-      background: var(--main-panel);
-      box-shadow: 0 4px 12px var(--main-shadow);
-      border-radius: 8px;
-      padding: 8px 0;
-      font-size: 14px;
-      color: var(--main-text);
-      z-index: 10000;
-      display: none;
-      width: 160px;
-      user-select: none;
-    }
-    #context-menu button {
-      width: 100%;
-      padding: 8px 16px;
-      border: none;
-      background: none;
-      text-align: right;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background-color 0.2s;
-      color: var(--main-text);
-    }
-    #context-menu button:hover {
-      background-color: var(--main-blue);
-      color: white;
-    }
-    .current-area-box {
-      position: absolute;
-      top: 24px;
-      right: 50%;
-      transform: translateX(50%);
-      background: var(--main-label-bg);
-      color: var(--main-blue);
-      font-weight: 700;
-      font-size: 17px;
-      padding: 10px 22px;
-      border-radius: 16px;
-      box-shadow: 0 4px 16px var(--main-blue-dark)22;
-      z-index: 9999;
-      min-width: 160px;
-      text-align: center;
-      letter-spacing: 0.5px;
-      display: none;
-      user-select: none;
-    }
-    .current-area-box .delete-current-btn {
-      margin-right: 12px;
-      background: var(--main-red);
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 4px 14px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-      margin-top: 8px;
-      display: inline-block;
-    }
-    .current-area-box .delete-current-btn:hover {
-      background: var(--main-red-dark);
-    }
-    /* كيرسر دبوس */
-    .cursor-pin {
-      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><path d="M16 2C10.477 2 6 6.477 6 12c0 7.732 8.06 17.09 8.406 17.469a1 1 0 0 0 1.188 0C17.94 29.09 26 19.732 26 12c0-5.523-4.477-10-10-10zm0 13.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" fill="%230078d4" stroke="white" stroke-width="2"/></svg>') 16 32, pointer !important;
-    }
-    /* كيرسر دائرة */
-    .cursor-circle {
-      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><circle cx="16" cy="16" r="12" fill="%23fff" stroke="%230078d4" stroke-width="3"/></svg>') 16 16, pointer !important;
-    }
-    @media (max-width: 900px) {
-      .side-panel, .control-buttons.left {
-        width: 100vw !important;
-        min-width: 0 !important;
-        max-width: 100vw !important;
-        border-radius: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        padding: 18px 4vw 12px 4vw !important;
-        box-shadow: 0 8px 32px var(--main-shadow);
-        z-index: 10002 !important;
-      }
-      .side-panel.hidden {
-        right: -100vw !important;
-      }
-      .control-buttons.left.hidden {
-        left: -100vw !important;
-      }
-      .toggle-panel-btn.left, #toggleLeftPanelBtn {
-        left: 0 !important;
-        right: auto !important;
-        top: 50% !important;
-        transform: translateY(-50%) translateX(-50%) !important;
-        z-index: 10003 !important;
-      }
-      .toggle-panel-btn.right, #toggleRightPanelBtn {
-        right: 0 !important;
-        left: auto !important;
-        top: 50% !important;
-        transform: translateY(-50%) translateX(50%) !important;
-        z-index: 10003 !important;
-      }
-    }
-    @media (max-width: 600px) {
-      .side-panel, .control-buttons.left {
-        width: 100vw !important;
-        min-width: 0 !important;
-        max-width: 100vw !important;
-        border-radius: 0 !important;
-        left: 0 !important;
-        right: 0 !important;
-        padding: 8px 1vw 6px 1vw !important;
-        z-index: 10002 !important;
-      }
-      .side-panel.hidden {
-        right: -100vw !important;
-      }
-      .control-buttons.left.hidden {
-        left: -100vw !important;
-      }
-      .toggle-panel-btn.left, #toggleLeftPanelBtn {
-        left: 0 !important;
-        right: auto !important;
-        top: 50% !important;
-        transform: translateY(-50%) translateX(-50%) !important;
-        z-index: 10003 !important;
-      }
-      .toggle-panel-btn.right, #toggleRightPanelBtn {
-        right: 0 !important;
-        left: auto !important;
-        top: 50% !important;
-        transform: translateY(-50%) translateX(50%) !important;
-        z-index: 10003 !important;
-      }
-    }
-    .toggle-panel-btn {
-      position: fixed;
-      top: 50%;
-      transform: translateY(-50%);
-      z-index: 10003;
-      background: var(--main-panel);
-      border: 1px solid var(--main-border);
-      border-radius: 50%;
-      width: 44px;
-      height: 44px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 22px;
-      box-shadow: 0 2px 8px var(--main-shadow);
-      cursor: pointer;
-      transition: background 0.2s, box-shadow 0.2s;
-    }
-    .toggle-panel-btn.left {
-      left: 0;
-    }
-    .toggle-panel-btn.right {
-      right: 0;
-    }
-    .control-buttons.left {
-      z-index: 10002;
-    }
-    .side-panel {
-      z-index: 10002;
-    }
-    .toggle-panel-btn.left.hide-btn {
-      left: 0;
-      right: auto;
-      top: 50%;
-      transform: translateY(-50%) translateX(-50%);
-      z-index: 10004;
-      display: none;
-      position: fixed;
-    }
-    .control-buttons.left:not(.hidden) ~ .toggle-panel-btn.left.hide-btn {
-      display: flex !important;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق الخرائط التفاعلية</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- Cairo Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* ألوان الوضع الفاتح */
+            --main-bg: #f0f2f5;
+            --panel-bg: rgba(255, 255, 255, 0.85);
+            --panel-border: rgba(0, 0, 0, 0.1);
+            --text-color: #333;
+            --text-secondary: #666;
+            --accent-color: #4a6fa5;
+            --accent-hover: #3d5d8a;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            --button-bg: #fff;
+            --button-text: #333;
+            --map-control-bg: rgba(255, 255, 255, 0.9);
+            --highlight: #ff6b6b;
+            --success: #4caf50;
+            
+            /* ألوان المضلعات */
+            --polygon-color: rgba(255, 0, 0, 0.5);
+        }
+        
+        .dark-mode {
+            /* ألوان الوضع الداكن */
+            --main-bg: #121212;
+            --panel-bg: rgba(30, 30, 30, 0.85);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --text-color: #f0f0f0;
+            --text-secondary: #aaa;
+            --accent-color: #5d8fc9;
+            --accent-hover: #4a74a5;
+            --shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            --button-bg: #2a2a2a;
+            --button-text: #f0f0f0;
+            --map-control-bg: rgba(40, 40, 40, 0.9);
+            --highlight: #ff8e8e;
+            --success: #66bb6a;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Cairo', sans-serif;
+        }
+        
+        body {
+            background-color: var(--main-bg);
+            color: var(--text-color);
+            transition: background-color 0.3s, color 0.3s;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        /* تصميم الخريطة */
+        #map {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 1;
+        }
+        
+        /* اللوحات الجانبية */
+        .panel {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 20rem;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--panel-border);
+            transition: transform 0.3s ease;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+        
+        .left-panel {
+            right: 0;
+        }
+        
+        .panel-hidden {
+            transform: translateX(100%);
+        }
+        
+        /* عناوين اللوحات */
+        .panel-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        /* أزرار التحكم */
+        .toggle-btn {
+            position: absolute;
+            top: 1rem;
+            z-index: 1001;
+            background: var(--map-control-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            font-size: 1.2rem;
+        }
+        
+        .toggle-btn:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .toggle-left {
+            right: 1rem;
+        }
+        
+        /* عناصر التحكم في الخريطة المخصصة */
+        .custom-controls {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .custom-control {
+            background: var(--map-control-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            font-size: 1.1rem;
+        }
+        
+        .custom-control:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        /* صندوق المساحة الحالية */
+        #current-area-box {
+            position: absolute;
+            bottom: 4rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--panel-border);
+            display: none;
+            min-width: 250px;
+        }
+        
+        .area-info {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .area-info h3 {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .area-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .area-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background: var(--button-bg);
+            color: var(--button-text);
+            transition: background 0.2s;
+        }
+        
+        .save-btn {
+            background: var(--success);
+            color: white;
+        }
+        
+        .cancel-btn {
+            background: #f44336;
+            color: white;
+        }
+        
+        /* عناصر القائمة */
+        .panel-item {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.2s;
+        }
+        
+        .panel-item:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+            border-color: var(--accent-color);
+        }
+        
+        .panel-item-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .panel-item-content {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+        
+        .item-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+        }
+        
+        .action-btn {
+            padding: 0.25rem 0.5rem;
+            background: var(--button-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        
+        .action-btn:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        /* أزرار القائمة الدائرية */
+        .tools-menu {
+            position: absolute;
+            top: 5rem;
+            left: 1rem;
+            z-index: 1001;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .tool-btn {
+            background: var(--map-control-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            font-size: 1.2rem;
+            overflow: hidden;
+        }
+        
+        .tool-btn img {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .tool-btn:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: scale(1.1);
+        }
+        
+        .tool-btn.active {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        /* شريط البحث */
+        .search-container {
+            position: absolute;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s;
+        }
+        
+        .search-toggle {
+            background: var(--map-control-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            font-size: 1.2rem;
+        }
+        
+        .search-toggle:hover {
+            background: var(--accent-color);
+            color: white;
+        }
+        
+        .search-box {
+            position: relative;
+            width: 0;
+            overflow: hidden;
+            transition: all 0.3s ease-in-out;
+            opacity: 0;
+            transform: translateX(20px);
+        }
+        
+        .search-box.active {
+            width: 300px;
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 2.5rem 0.75rem 0.75rem;
+            border: 1px solid var(--panel-border);
+            border-radius: 30px;
+            background: var(--button-bg);
+            color: var(--text-color);
+            box-shadow: var(--shadow);
+        }
+        
+        .search-icon {
+            position: absolute;
+            top: 50%;
+            left: 0.75rem;
+            transform: translateY(-50%);
+        }
+        
+        /* التصميم المتجاوب */
+        @media (max-width: 900px) {
+            .panel {
+                width: 18rem;
+            }
+            
+            .toggle-btn {
+                top: 0.5rem;
+            }
+            
+            .toggle-left {
+                right: 0.5rem;
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .panel {
+                width: 16rem;
+                padding: 0.75rem;
+            }
+            
+            .custom-controls {
+                bottom: 0.5rem;
+            }
+            
+            .search-box.active {
+                width: 250px;
+            }
+        }
+        
+        /* الرسائل والتنبيهات */
+        .no-selections {
+            text-align: center;
+            padding: 1rem;
+            color: var(--text-secondary);
+        }
+        
+        .alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 5px;
+            z-index: 2000;
+            animation: fadeIn 0.3s;
+        }
+        
+        .alert-info {
+            background-color: var(--accent-color);
+            color: white;
+        }
+        
+        .alert-error {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; top: 10px; }
+            to { opacity: 1; top: 20px; }
+        }
+        
+        /* النصوص على الخريطة */
+        .map-label {
+            background: var(--panel-bg);
+            backdrop-filter: blur(5px);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            border: 1px solid var(--panel-border);
+            font-weight: bold;
+            cursor: move;
+            user-select: none;
+        }
+        
+        /* منبثق التعديل */
+        .edit-popup {
+            position: absolute;
+            bottom: 8rem;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--panel-border);
+            display: none;
+            min-width: 250px;
+            text-align: center;
+        }
+        
+        .edit-popup h3 {
+            margin-bottom: 1rem;
+        }
+        
+        .edit-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .edit-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            border-radius:  4px;
+            cursor: pointer;
+            background: var(--button-bg);
+            color: var(--button-text);
+            transition: background 0.2s;
+        }
+        
+        .confirm-btn {
+            background: var(--success);
+            color: white;
+        }
+        
+        .revert-btn {
+            background: #f44336;
+            color: white;
+        }
+        
+        /* منبثق البحث */
+        #search-modal {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            background: var(--panel-bg);
+            backdrop-filter: blur(10px);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--panel-border);
+            min-width: 300px;
+            text-align: center;
+            display: none;
+        }
+        
+        #search-modal h3 {
+            margin-bottom: 1rem;
+            color: var(--accent-color);
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            justify-content: center;
+        }
+        
+        .modal-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .modal-add-btn {
+            background: var(--success);
+            color: white;
+        }
+        
+        .modal-cancel-btn {
+            background: #f44336;
+            color: white;
+        }
+        
+        .modal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        
+        /* المسطرة */
+        .leaflet-control-scale {
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: var(--map-control-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 4px;
+            padding: 5px 10px;
+            font-size: 12px;
+            box-shadow: var(--shadow);
+        }
+        
+        /* عناصر التحكم في الشفافية والنمط */
+        .style-control {
+            margin-top: 0.5rem;
+        }
+        
+        .style-control label {
+            display: block;
+            margin-bottom: 0.25rem;
+            font-size: 0.85rem;
+        }
+        
+        .opacity-slider {
+            width: 100%;
+            margin-top: 0.25rem;
+        }
+        
+        .pattern-select {
+            width: 100%;
+            padding: 0.25rem;
+            border-radius: 4px;
+            border: 1px solid var(--panel-border);
+            background: var(--button-bg);
+            color: var(--text-color);
+        }
+        
+        /* تعديلات للوضع الداكن */
+        .dark-mode .leaflet-control-scale {
+            color: var(--text-color);
+        }
+    </style>
 </head>
 <body>
-  <button id="toggleLeftPanelBtn" class="toggle-panel-btn left">⏪</button>
-  <button id="toggleRightPanelBtn" class="toggle-panel-btn right">⏩</button>
-  <div class="control-buttons left hidden">
-    <div style="margin-bottom:12px;display:flex;gap:6px;align-items:center;">
-    <input id="citySearchInput" type="text" placeholder="ابحث عن مدينة..." style="flex:1;padding:7px 10px;border-radius:8px;border:1px solid #d0d7e6;font-size:15px;">
-    <button id="citySearchBtn" style="background:var(--main-blue);color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:15px;cursor:pointer;">🔍</button>
-  </div>
-    <div class="button-group">
-      <button id="drawPolygonBtn" title="تحديد مضلع">
-        <span style="font-size:20px;">📐</span> تحديد مضلع
-      </button>
-      <button id="drawCurveBtn" title="تحديد شكل منحن">
-        <span style="font-size:20px;">🌀</span> تحديد شكل منحنٍ
-      </button>
-      <button onclick="clearMarkers()">
-        <span style="font-size:20px;">🗑️</span> حذف التحديدات
-      </button>
-      <button onclick="finishPolygon()">
-        <span style="font-size:20px;">✅</span> إنهاء المضلع
-      </button>
-      <button id="writeBtn" title="إضافة نص على الخريطة">
-        <span style="font-size:20px;">✏️</span> إضافة نص
-      </button>
-      <div style="margin-top:6px;">
-        <select id="mapTypeSelect" title="تغيير نوع الخريطة" style="width:100%;padding:8px 10px;border-radius:8px;border:1px solid #d0d7e6;font-size:15px;background:var(--main-bg);color:var(--main-blue);">
-          <option value="osm">خريطة عادية</option>
-          <option value="satellite">قمر صناعي</option>
-        </select>
-      </div>
+    <!-- الخريطة -->
+    <div id="map"></div>
+    
+    <!-- اللوحة اليسرى (التحديدات الحالية) -->
+    <div class="panel left-panel">
+        <div class="panel-title">
+            <span>التحديدات الحالية</span>
+            <i class="fas fa-times close-panel"></i>
+        </div>
+        <div id="current-selections">
+            <div class="no-selections">لا توجد تحديدات حتى الآن</div>
+        </div>
     </div>
-    <div class="icon-group">
-      <button onclick="addSymbol('tank')">
-        <img src="https://cdn-icons-png.flaticon.com/512/2693/2693575.png" alt="دبابة" style="width:22px;height:22px;"> دبابة
-      </button>
-      <button onclick="addSymbol('artillery')">
-        <img src="https://cdn-icons-png.flaticon.com/512/2693/2693577.png" alt="مدفعية" style="width:22px;height:22px;"> مدفعية
-      </button>
+    
+    <!-- شريط البحث -->
+    <div class="search-container">
+        <div class="search-toggle" id="search-toggle">
+            <i class="fas fa-search"></i>
+        </div>
+        <div class="search-box" id="search-box">
+            <input type="text" id="search-input" class="search-input" placeholder="ابحث عن موقع...">
+            <i class="fas fa-search search-icon"></i>
+        </div>
     </div>
-  </div>
-  <div class="side-panel hidden">
-    <button id="hideRightPanelBtn">⏩</button>
-    <h2>التحديدات الحالية</h2>
-    <div id="polygon-list">
-      <p>لا توجد تحديدات حتى الآن</p>
+    
+    <!-- منبثق البحث -->
+    <div id="search-modal">
+        <h3 id="modal-city-name">تم العثور على المدينة</h3>
+        <p>هل ترغب في إضافة المدينة إلى التحديدات؟</p>
+        <div class="modal-actions">
+            <button class="modal-btn modal-add-btn" id="add-city-btn">إضافة المدينة</button>
+            <button class="modal-btn modal-cancel-btn" id="cancel-city-btn">إلغاء</button>
+        </div>
     </div>
-  </div>
-  <div id="map"></div>
-  <div class="current-area-box" id="current-area-box"></div>
-  <div id="context-menu">
-    <button id="changeColorBtn">تغيير اللون</button>
-    <button id="deletePolygonBtn">حذف المضلع</button>
-  </div>
-  <button id="hideLeftPanelBtn" class="toggle-panel-btn left hide-btn">⏪</button>
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/@turf/turf/turf.min.js"></script>
-  <script src="https://unpkg.com/leaflet.browser.print/dist/leaflet.browser.print.min.js"></script>
-  <script>
-    let osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    });
-    let satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri'
-    });
-    const map = L.map('map', {
-      zoomControl: false,
-      center: [35.9306, 36.6339],
-      zoom: 13,
-      layers: [osmLayer]
-    });
-    if (L.control.browserPrint) {
-      L.control.browserPrint({ position: 'topright' }).addTo(map);
-    }
-    let drawingEnabled = false;
-    let drawingMode = null; // 'polygon' | 'curve' | null
-    let currentPoints = [];
-    let currentMarkers = [];
-    let currentPolygonLayer = null;
-    let polygons = [];
-    let polygonLayers = [];
-    let polygonMeta = [];
-    let polygonLabels = [];
-    let symbolMarkers = [];
-    let mapTexts = [];
-    let mapTextMarkers = [];
-    const symbols = {
-      tank: "https://cdn-icons-png.flaticon.com/512/2693/2693575.png",
-      artillery: "https://cdn-icons-png.flaticon.com/512/2693/2693577.png"
-    };
-
-    // زر تغيير نوع الخريطة
-    const mapTypeSelect = document.getElementById('mapTypeSelect');
-    if (mapTypeSelect) {
-      mapTypeSelect.addEventListener('change', function() {
-        // إزالة جميع الطبقات الأساسية أولاً
-        if (map.hasLayer(osmLayer)) map.removeLayer(osmLayer);
-        if (map.hasLayer(satelliteLayer)) map.removeLayer(satelliteLayer);
-        // أضف الطبقة المطلوبة فقط
-        if (this.value === "osm") {
-          map.addLayer(osmLayer);
-        } else if (this.value === "satellite") {
-          map.addLayer(satelliteLayer);
-        }
-      });
-    }
-    // زر الكتابة على الخريطة (يضيف نص افتراضي مباشرة)
-    document.getElementById('writeBtn').onclick = function() {
-      const center = map.getCenter();
-      const textObj = {
-        text: "نص جديد",
-        color: "#0078d4"
-      };
-      mapTexts.push(textObj);
-      const marker = L.marker(center, {
-        icon: L.divIcon({
-          className: 'polygon-label',
-          html: `<div style="background:var(--main-label-bg);color:${textObj.color};font-weight:700;font-size:15px;padding:4px 14px;border-radius:10px;box-shadow:0 2px 8px var(--main-blue-dark)22;">${textObj.text}</div>`,
-          iconSize: [120, 32],
-          iconAnchor: [60, 16]
-        }),
-        draggable: true
-      }).addTo(map);
-      mapTextMarkers.push(marker);
-      updatePolygonList();
-    };
-    function addSymbol(type) {
-      const iconUrl = symbols[type];
-      if (!iconUrl) return;
-      const center = map.getCenter();
-      const symbolMarker = L.marker(center, {
-        icon: L.icon({
-          iconUrl,
-          iconSize: [38, 38],
-          iconAnchor: [19, 38]
-        }),
-        draggable: true
-      }).addTo(map);
-      symbolMarkers.push(symbolMarker);
-    }
-    function getPolygonArea(points) {
-      if (points.length < 3) return 0;
-      const closed = [...points.map(p => [p[1], p[0]]), [points[0][1], points[0][0]]];
-      const turfPoly = turf.polygon([closed]);
-      return turf.area(turfPoly);
-    }
-    // تحديث قائمة التحديدات الجانبية مع المساحة لكل مضلع والنصوص
-    function updatePolygonList() {
-      const listDiv = document.getElementById('polygon-list');
-      listDiv.innerHTML = '';
-      // نصوص الخريطة
-      mapTexts.forEach((txt, idx) => {
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'text-item';
-        // النص
-        const textLabel = document.createElement('label');
-        textLabel.textContent = 'النص:';
-        const textInput = document.createElement('input');
-        textInput.type = 'text';
-        textInput.value = txt.text;
-        textInput.oninput = e => {
-          mapTexts[idx].text = e.target.value;
-          mapTextMarkers[idx].setIcon(L.divIcon({
-            className: 'polygon-label',
-            html: `<div style="background:var(--main-label-bg);color:${mapTexts[idx].color};font-weight:700;font-size:15px;padding:4px 14px;border-radius:10px;box-shadow:0 2px 8px var(--main-blue-dark)22;">${mapTexts[idx].text}</div>`,
-            iconSize: [120, 32],
-            iconAnchor: [60, 16]
-          }));
-        };
-        // اللون
-        const colorLabel = document.createElement('label');
-        colorLabel.textContent = 'لون النص:';
-        const colorInput = document.createElement('input');
-        colorInput.type = 'color';
-        colorInput.value = txt.color;
-        colorInput.oninput = e => {
-          mapTexts[idx].color = e.target.value;
-          mapTextMarkers[idx].setIcon(L.divIcon({
-            className: 'polygon-label',
-            html: `<div style="background:var(--main-label-bg);color:${mapTexts[idx].color};font-weight:700;font-size:15px;padding:4px 14px;border-radius:10px;box-shadow:0 2px 8px var(--main-blue-dark)22;">${mapTexts[idx].text}</div>`,
-            iconSize: [120, 32],
-            iconAnchor: [60, 16]
-          }));
-        };
-        // زر حذف النص
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = 'حذف النص';
-        deleteBtn.onclick = () => {
-          map.removeLayer(mapTextMarkers[idx]);
-          mapTexts.splice(idx, 1);
-          mapTextMarkers.splice(idx, 1);
-          updatePolygonList();
-        };
-        itemDiv.appendChild(textLabel);
-        itemDiv.appendChild(textInput);
-        itemDiv.appendChild(colorLabel);
-        itemDiv.appendChild(colorInput);
-        itemDiv.appendChild(deleteBtn);
-        listDiv.appendChild(itemDiv);
-      });
-      // المضلعات
-      if (polygons.length === 0 && mapTexts.length === 0) {
-        listDiv.innerHTML = '<p>لا توجد تحديدات حتى الآن</p>';
-        return;
-      }
-      polygons.forEach((poly, index) => {
-        const meta = polygonMeta[index];
-        const color = meta.color || '#3388ff';
-        const alpha = meta.alpha !== undefined ? meta.alpha : 0.5;
-        const name = meta.name || `تحديد #${index + 1}`;
-        const area = getPolygonArea(poly);
-        const m2 = area.toFixed(0);
-        const km2 = (area / 1e6).toFixed(3);
-        const showLabel = meta.showLabel || false;
-        const itemDiv = document.createElement('div');
-        itemDiv.className = 'polygon-item';
-        // الاسم
-        const nameLabel = document.createElement('label');
-        nameLabel.textContent = 'الاسم:';
-        const nameInput = document.createElement('input');
-        nameInput.type = 'text';
-        nameInput.value = name;
-        nameInput.oninput = e => {
-          polygonMeta[index].name = e.target.value;
-          if (polygonLabels[index]) {
-            polygonLabels[index].setContent(e.target.value);
-          }
-        };
-        // اللون والشفافية
-        const colorLabel = document.createElement('label');
-        colorLabel.textContent = 'لون التحديد:';
-        const colorInput = document.createElement('input');
-        colorInput.type = 'color';
-        colorInput.value = color;
-        colorInput.oninput = e => {
-          polygonMeta[index].color = e.target.value;
-          polygonLayers[index].setStyle({ color: e.target.value, fillColor: e.target.value, fillOpacity: polygonMeta[index].alpha ?? 0.5 });
-        };
-        const alphaLabel = document.createElement('label');
-        alphaLabel.textContent = 'الشفافية:';
-        const alphaInput = document.createElement('input');
-        alphaInput.type = 'range';
-        alphaInput.min = 0.1;
-        alphaInput.max = 1;
-        alphaInput.step = 0.05;
-        alphaInput.value = alpha;
-        alphaInput.oninput = e => {
-          polygonMeta[index].alpha = parseFloat(e.target.value);
-          polygonLayers[index].setStyle({ fillOpacity: polygonMeta[index].alpha, color: polygonMeta[index].color, fillColor: polygonMeta[index].color });
-        };
-        // المساحة
-        const areaLabel = document.createElement('span');
-        areaLabel.className = 'area-label';
-        areaLabel.textContent = `المساحة: ${m2} م² (${km2} كم²)`;
-        // Checkbox إظهار الاسم
-        const showNameDiv = document.createElement('div');
-        showNameDiv.className = 'show-name-label';
-        const showNameInput = document.createElement('input');
-        showNameInput.type = 'checkbox';
-        showNameInput.checked = showLabel;
-        showNameInput.onchange = function() {
-          polygonMeta[index].showLabel = this.checked;
-          updatePolygonLabel(index);
-        };
-        const showNameLabel = document.createElement('span');
-        showNameLabel.textContent = 'إظهار الاسم على الخريطة';
-        showNameDiv.appendChild(showNameInput);
-        showNameDiv.appendChild(showNameLabel);
-        // زر إعادة التعديل
-        const editBtn = document.createElement('button');
-        editBtn.className = 'edit-btn';
-        editBtn.onclick = () => {
-          if (currentPolygonLayer) {
-            map.removeLayer(currentPolygonLayer);
-          }
-          currentPoints = polygons[index].slice();
-          currentMarkers.forEach(m => map.removeLayer(m));
-          currentMarkers = [];
-          currentPoints.forEach(pt => {
-            const marker = L.marker(pt, {
-              draggable: true,
-              icon: L.divIcon({
-                className: 'custom-pin',
-                html: `<svg viewBox="0 0 32 32"><path d="M16 2C10.477 2 6 6.477 6 12c0 7.732 8.06 17.09 8.406 17.469a1 1 0 0 0 1.188 0C17.94 29.09 26 19.732 26 12c0-5.523-4.477-10-10-10zm0 13.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" fill="#0078d4" stroke="#fff" stroke-width="2"/></svg>`,
-                iconSize: [32, 32],
-                iconAnchor: [16, 32],
-                popupAnchor: [0, -32]
-              })
-            }).addTo(map);
-            marker.on('drag', e => {
-              const idx = currentMarkers.indexOf(marker);
-              if (idx !== -1) {
-                currentPoints[idx] = [e.latlng.lat, e.latlng.lng];
-                if (currentPolygonLayer) {
-                  currentPolygonLayer.setLatLngs(currentPoints);
-                }
-                showCurrentArea();
-              }
+    
+    <!-- قائمة الأدوات الدائرية -->
+    <div class="tools-menu">
+        
+        <div class="tool-btn" id="polygon-btn" title="تحديد مضلع">
+            <i class="fas fa-draw-polygon"></i>
+        </div>
+        <div class="tool-btn" id="add-text-btn" title="إضافة نص">
+            <i class="fas fa-font"></i>
+        </div>
+        <div class="tool-btn" id="fire-btn" title="نار تشتعل">
+            <img src="ملصقات/دبابة.png" alt="نار">
+        </div>
+        <div class="tool-btn" id="soldier-btn" title="جندي يطرق النار">
+            <img src="ملصقات/جنود.png" alt="جندي">
+        </div>
+        <div class="tool-btn" id="airplane-btn" title="طيارة تطير">
+            <img src="ملصقات/طيارة.png" alt="طائرة">
+        </div>
+        <div class="tool-btn" id="delete-all-btn" title="حذف التحديدات">
+            <i class="fas fa-trash"></i>
+        </div>
+        <div class="tool-btn" id="theme-toggle" title="تغيير الثيم">
+            <i class="fas fa-moon"></i>
+        </div>
+    </div>
+    
+    <!-- زر التحكم في اللوحة الجانبية -->
+    <div class="toggle-btn toggle-left">
+        <i class="fas fa-layer-group"></i>
+    </div>
+    
+    <!-- صندوق المساحة الحالية -->
+    <div id="current-area-box">
+        <div class="area-info">
+            <h3>المساحة الحالية</h3>
+            <p id="area-value">0 م² (0 كم²)</p>
+        </div>
+        <div class="area-actions">
+            <button class="area-btn save-btn" id="save-area">إضافة التحديد</button>
+            <button class="area-btn cancel-btn" id="cancel-area">حذف التحديد</button>
+        </div>
+    </div>
+    
+    <!-- منبثق التعديل -->
+    <div class="edit-popup" id="edit-popup">
+        <h3>هل تريد حفظ التعديلات؟</h3>
+        <div class="edit-actions">
+            <button class="edit-btn confirm-btn" id="confirm-edit">تم</button>
+            <button class="edit-btn revert-btn" id="revert-edit">إلغاء</button>
+        </div>
+    </div>
+    
+    <!-- مكتبات JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/leaflet.browser.print@1.0.1/dist/leaflet.browser.print.min.js"></script>
+    
+    <!-- ملف GeoJSON -->
+    <link rel="preload" href="data/cities.geojson" as="fetch" crossorigin>
+    
+    <script>
+        // تهيئة المتغيرات
+        let map, currentLayer, drawingMode = null;
+        let markers = [];
+        let polygons = [];
+        let labels = [];
+        let icons = [];
+        let currentAreaBox = document.getElementById('current-area-box');
+        let areaValue = document.getElementById('area-value');
+        let selectionCounter = 1;
+        let editMode = false;
+        let currentEditPolygon = null;
+        let originalPolygon = null;
+        let editPopup = document.getElementById('edit-popup');
+        let currentColor = '#ff0000';
+        let nameLabels = {};
+        let geoJsonData = null;
+        let lastSearchPolygon = null;
+        let lastSearchLabel = null;
+        let currentSearchResult = null;
+        
+        // تهيئة الخريطة
+        function initMap() {
+            // إنشاء الخريطة
+            map = L.map('map', {
+                center: [35.9306, 36.6339],
+                zoom: 13,
+                zoomControl: false
             });
-            currentMarkers.push(marker);
-          });
-          currentPolygonLayer = L.polygon(currentPoints, { color: meta.color || 'red', fillColor: meta.color || 'red', fillOpacity: meta.alpha ?? 0.5 }).addTo(map);
-          map.removeLayer(polygonLayers[index]);
-          if (polygonLabels[index]) {
-            map.removeLayer(polygonLabels[index]);
-            polygonLabels[index] = null;
-          }
-          polygons.splice(index, 1);
-          polygonLayers.splice(index, 1);
-          polygonMeta.splice(index, 1);
-          polygonLabels.splice(index, 1);
-          updatePolygonList();
-          showCurrentArea();
-        };
-        // زر حذف المضلع
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = 'حذف المضلع';
-        deleteBtn.onclick = () => {
-          map.removeLayer(polygonLayers[index]);
-          if (polygonLabels[index]) map.removeLayer(polygonLabels[index]);
-          polygonLayers.splice(index, 1);
-          polygons.splice(index, 1);
-          polygonMeta.splice(index, 1);
-          polygonLabels.splice(index, 1);
-          updatePolygonList();
-        };
-        itemDiv.appendChild(nameLabel);
-        itemDiv.appendChild(nameInput);
-        itemDiv.appendChild(colorLabel);
-        itemDiv.appendChild(colorInput);
-        itemDiv.appendChild(alphaLabel);
-        itemDiv.appendChild(alphaInput);
-        itemDiv.appendChild(areaLabel);
-        itemDiv.appendChild(showNameDiv);
-        itemDiv.appendChild(editBtn);
-        itemDiv.appendChild(deleteBtn);
-        listDiv.appendChild(itemDiv);
-      });
-    }
-    // تحديث أو إضافة أو حذف اسم المضلع على الخريطة
-    function updatePolygonLabel(index) {
-      if (!polygonMeta[index]) return;
-      if (polygonLabels[index]) {
-        map.removeLayer(polygonLabels[index]);
-        polygonLabels[index] = null;
-      }
-      if (polygonMeta[index].showLabel) {
-        const poly = polygons[index];
-        if (poly.length < 3) return;
-        const turfPoly = turf.polygon([[...poly.map(p => [p[1], p[0]]), [poly[0][1], poly[0][0]]]]);
-        const center = turf.centerOfMass(turfPoly).geometry.coordinates;
-        const label = L.marker([center[1], center[0]], {
-          icon: L.divIcon({
-            className: 'polygon-label',
-            html: `<div style="background:var(--main-label-bg);color:var(--main-blue);font-weight:700;font-size:15px;padding:4px 14px;border-radius:10px;box-shadow:0 2px 8px var(--main-blue-dark)22;">${polygonMeta[index].name || 'تحديد'}</div>`,
-            iconSize: [120, 32],
-            iconAnchor: [60, 16]
-          }),
-          interactive: false
-        }).addTo(map);
-        polygonLabels[index] = label;
-      }
-    }
-    function showCurrentArea() {
-      const box = document.getElementById('current-area-box');
-      if (currentPoints.length >= 3) {
-        const closed = [...currentPoints.map(p => [p[1], p[0]]), [currentPoints[0][1], currentPoints[0][0]]];
-        const turfPoly = turf.polygon([closed]);
-        const area = turf.area(turfPoly);
-        const m2 = area.toFixed(0);
-        const km2 = (area / 1e6).toFixed(3);
-        box.innerHTML = `المساحة الحالية: ${m2} م² (${km2} كم²)
-        <br>
-        <button class="delete-current-btn" onclick="clearCurrentSelection()">حذف التحديد الحالي</button>`;
-        box.style.display = 'block';
-      } else {
-        box.style.display = 'none';
-      }
-    }
-    function showCurveArea(curvePoints) {
-      const box = document.getElementById('current-area-box');
-      if (curvePoints.length >= 3) {
-        const closed = [...curvePoints.map(p => [p[1], p[0]]), [curvePoints[0][1], curvePoints[0][0]]];
-        const turfPoly = turf.polygon([closed]);
-        const area = turf.area(turfPoly);
-        const m2 = area.toFixed(0);
-        const km2 = (area / 1e6).toFixed(3);
-        box.innerHTML = `المساحة الحالية: ${m2} م² (${km2} كم²)
-        <br>
-        <button class="delete-current-btn" onclick="clearCurrentSelection()">حذف التحديد الحالي</button>`;
-        box.style.display = 'block';
-      } else {
-        box.style.display = 'none';
-      }
-    }
-    function clearCurrentSelection() {
-      currentPoints = [];
-      currentMarkers.forEach(m => map.removeLayer(m));
-      currentMarkers = [];
-      if (currentPolygonLayer) {
-        map.removeLayer(currentPolygonLayer);
-        currentPolygonLayer = null;
-      }
-      document.getElementById('current-area-box').style.display = 'none';
-      // إلغاء منحني مؤقت
-      if (curvePolyline) {
-        map.removeLayer(curvePolyline);
-        curvePolyline = null;
-      }
-      curveDrawingActive = false;
-      curvePoints = [];
-    }
-
-    // وضع رسم المضلع أو المنحني
-    let curvePolyline = null;
-    let curvePoints = [];
-    let curveDrawingActive = false;
-
-    function setDrawingMode(mode) {
-      drawingMode = mode;
-      drawingEnabled = !!mode;
-      document.getElementById('drawPolygonBtn').classList.toggle('active', mode === 'polygon');
-      document.getElementById('drawCurveBtn').classList.toggle('active', mode === 'curve');
-      const mapDiv = document.getElementById('map');
-      mapDiv.classList.remove('cursor-pin', 'cursor-circle');
-      if (mode === 'polygon') {
-        mapDiv.classList.add('cursor-pin');
-        currentPoints = [];
-        currentMarkers.forEach(m => map.removeLayer(m));
-        currentMarkers = [];
-        if (currentPolygonLayer) {
-          map.removeLayer(currentPolygonLayer);
-          currentPolygonLayer = null;
+            
+            // إضافة طبقات الخريطة
+            const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            });
+            
+            // طبقة ساتلية مع أسماء المدن والحدود
+            const satelliteWithLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            });
+            
+            // طبقة حدود ومدن
+            const boundariesLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            });
+            
+            // مجموعة طبقات للخريطة الساتلية مع الحدود
+            const satelliteGroup = L.layerGroup([satelliteWithLabels, boundariesLayer]);
+            
+            // إضافة الطبقات إلى الخريطة
+            osmLayer.addTo(map);
+            
+            // إضافة عناصر تحكم الطبقة
+            const baseLayers = {
+                "خريطة طرقية": osmLayer,
+                "خريطة ساتلية": satelliteGroup
+            };
+            
+            L.control.layers(baseLayers, null, {position: 'bottomright'}).addTo(map);
+            
+            // إضافة مسطرة المسافة
+            L.control.scale({position: 'bottomleft'}).addTo(map);
+            
+            // تهيئة الأحداث
+            initEvents();
+            
+            // تحديث الوضع الداكن بناءً على تفضيلات المستخدم
+            updateThemeBasedOnPreference();
+            
+            // تحميل بيانات GeoJSON
+            loadGeoJSON();
         }
-        showCurrentArea();
-      } else if (mode === 'curve') {
-        mapDiv.classList.add('cursor-circle');
-        curvePoints = [];
-        if (curvePolyline) {
-          map.removeLayer(curvePolyline);
-          curvePolyline = null;
+        
+       
+        // تهيئة الأحداث
+        function initEvents() {
+            // أحداث أزرار التحكم في اللوحات
+            const toggleLeft = document.querySelector('.toggle-left');
+            toggleLeft.addEventListener('click', () => {
+                document.querySelector('.left-panel').classList.toggle('panel-hidden');
+            });
+            
+            // أحداث إغلاق اللوحة الجانبية
+            const closePanel = document.querySelector('.close-panel');
+            closePanel.addEventListener('click', () => {
+                document.querySelector('.left-panel').classList.add('panel-hidden');
+            });
+            
+            // أحداث أزرار الأدوات
+            document.getElementById('polygon-btn').addEventListener('click', () => startDrawing('polygon'));
+            document.getElementById('add-text-btn').addEventListener('click', addText);
+            document.getElementById('fire-btn').addEventListener('click', () => addIcon('fire'));
+            document.getElementById('soldier-btn').addEventListener('click', () => addIcon('soldier'));
+            document.getElementById('airplane-btn').addEventListener('click', () => addIcon('airplane'));
+            document.getElementById('delete-all-btn').addEventListener('click', deleteAllItems);
+            document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+            
+            // أحداث البحث
+            const searchToggle = document.getElementById('search-toggle');
+            const searchInput = document.getElementById('search-input');
+            searchToggle.addEventListener('click', toggleSearch);
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    searchLocation(this.value);
+                }
+            });
+            
+            // أحداث حفظ وحذف المساحة
+            document.getElementById('save-area').addEventListener('click', saveSelection);
+            document.getElementById('cancel-area').addEventListener('click', resetDrawing);
+            
+            // أحداث منبثق التعديل
+            document.getElementById('confirm-edit').addEventListener('click', confirmEdit);
+            document.getElementById('revert-edit').addEventListener('click', revertEdit);
+            
+            // أحداث منبثق البحث
+            document.getElementById('add-city-btn').addEventListener('click', addSearchResultToSelections);
+            document.getElementById('cancel-city-btn').addEventListener('click', cancelSearchResult);
         }
-        curveDrawingActive = false;
-        document.getElementById('current-area-box').style.display = 'none';
-      } else {
-        if (curvePolyline) {
-          map.removeLayer(curvePolyline);
-          curvePolyline = null;
-        }
-        curveDrawingActive = false;
-        document.getElementById('current-area-box').style.display = 'none';
-      }
-    }
-
-    document.getElementById('drawPolygonBtn').onclick = function() {
-      setDrawingMode(drawingMode === 'polygon' ? null : 'polygon');
-    };
-    document.getElementById('drawCurveBtn').onclick = function() {
-      setDrawingMode(drawingMode === 'curve' ? null : 'curve');
-    };
-
-    // رسم المنحني: يبدأ عند أول نقرة، ثم يتحرك مع الماوس، وينتهي عند نقرة ثانية
-    map.on('click', function(e) {
-      if (!drawingEnabled) return;
-      if (drawingMode === 'polygon') {
-        const latlng = e.latlng;
-        currentPoints.push([latlng.lat, latlng.lng]);
-        const marker = L.marker(latlng, {
-          draggable: true,
-          icon: L.divIcon({
-            className: 'custom-pin',
-            html: `<svg viewBox="0 0 32 32"><path d="M16 2C10.477 2 6 6.477 6 12c0 7.732 8.06 17.09 8.406 17.469a1 1 0 0 0 1.188 0C17.94 29.09 26 19.732 26 12c0-5.523-4.477-10-10-10zm0 13.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z" fill="#0078d4" stroke="#fff" stroke-width="2"/></svg>`,
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-          })
-        }).addTo(map);
-        marker.on('drag', e => {
-          const idx = currentMarkers.indexOf(marker);
-          if (idx !== -1) {
-            currentPoints[idx] = [e.latlng.lat, e.latlng.lng];
-            if (currentPolygonLayer) {
-              currentPolygonLayer.setLatLngs(currentPoints);
+        
+        // تبديل شريط البحث
+        function toggleSearch() {
+            const searchBox = document.getElementById('search-box');
+            searchBox.classList.toggle('active');
+            
+            if (searchBox.classList.contains('active')) {
+                document.getElementById('search-input').focus();
             }
-            showCurrentArea();
-          }
-        });
-        currentMarkers.push(marker);
-        if (currentPolygonLayer) {
-          currentPolygonLayer.setLatLngs(currentPoints);
-        } else {
-          currentPolygonLayer = L.polygon(currentPoints, { color: 'red', fillColor: 'red', fillOpacity: 0.5 }).addTo(map);
         }
-        showCurrentArea();
-      } else if (drawingMode === 'curve') {
-        if (!curveDrawingActive) {
-          // ابدأ الرسم
-          curveDrawingActive = true;
-          curvePoints = [[e.latlng.lat, e.latlng.lng]];
-          if (curvePolyline) {
-            map.removeLayer(curvePolyline);
-          }
-          curvePolyline = L.polyline([e.latlng], { color: '#0078d4', weight: 4, dashArray: '6 6' }).addTo(map);
-        } else {
-          // أنهي الرسم
-          curveDrawingActive = false;
-          if (curvePoints.length > 2) {
-            curvePoints.push(curvePoints[0]);
-            polygons.push(curvePoints.slice());
-            polygonMeta.push({ color: '#0078d4', alpha: 0.5, name: `منحني #${polygons.length}`, showLabel: false });
-            const newLayer = L.polygon(curvePoints, { color: '#0078d4', fillColor: '#0078d4', fillOpacity: 0.5 }).addTo(map);
-            polygonLayers.push(newLayer);
-            polygonLabels.push(null);
-            updatePolygonList();
-            if (curvePolyline) {
-              map.removeLayer(curvePolyline);
-              curvePolyline = null;
+        
+        // بدء عملية الرسم
+        function startDrawing(type) {
+            // إيقاف أي وضع رسم سابق
+            resetDrawing();
+            
+            // الخروج من وضع التحرير إذا كان نشطًا
+            if (editMode) {
+                exitEditMode();
             }
-            showCurveArea(curvePoints);
-            curvePoints = [];
-            initializePolygonRightClick();
-            setDrawingMode(null);
-          } else if (curvePolyline) {
-            map.removeLayer(curvePolyline);
-            curvePolyline = null;
-            curvePoints = [];
-            document.getElementById('current-area-box').style.display = 'none';
-          }
+            
+            drawingMode = type;
+            
+            // إظهار صندوق المساحة
+            currentAreaBox.style.display = 'block';
+            
+            // إضافة مستمع حدث للنقر على الخريطة
+            map.on('click', handleMapClick);
         }
-      }
-    });
-
-    map.on('mousemove', function(e) {
-      if (drawingMode === 'curve' && curveDrawingActive) {
-        curvePoints.push([e.latlng.lat, e.latlng.lng]);
-        if (curvePolyline) {
-          curvePolyline.setLatLngs(curvePoints.map(p => [p[0], p[1]]));
+        
+        // معالجة النقر على الخريطة أثناء الرسم
+        function handleMapClick(e) {
+            addMarker(e.latlng);
         }
-        showCurveArea(curvePoints);
-      }
-    });
-
-    // إنهاء المضلع أو المنحني
-    function finishPolygon() {
-      if (drawingMode === 'polygon' && currentPoints.length >= 3) {
-        polygons.push(currentPoints.slice());
-        polygonMeta.push({ color: 'red', alpha: 0.5, name: `تحديد #${polygons.length}`, showLabel: false });
-        const newLayer = L.polygon(currentPoints, { color: 'red', fillColor: 'red', fillOpacity: 0.5 }).addTo(map);
-        polygonLayers.push(newLayer);
-        polygonLabels.push(null);
-        updatePolygonList();
-        currentPoints = [];
-        currentMarkers.forEach(m => map.removeLayer(m));
-        currentMarkers = [];
-        if (currentPolygonLayer) {
-          map.removeLayer(currentPolygonLayer);
-          currentPolygonLayer = null;
+        
+        // إضافة علامة إلى الخريطة
+        function addMarker(latlng) {
+            const marker = L.marker(latlng, {
+                draggable: true
+            }).addTo(map);
+            
+            markers.push(marker);
+            
+            // تحديث المضلع/المنحنى عند سحب العلامة
+            marker.on('drag', updateShape);
+            marker.on('dragend', updateShape);
+            
+            // إذا كان هناك علامتان أو أكثر، قم بإنشاء/تحديث المضلع
+            if (markers.length >= 2) {
+                updateShape();
+            }
+            
+            // إذا كان هناك ثلاث علامات أو أكثر، احسب المساحة
+            if (markers.length >= 3) {
+                calculateArea();
+            }
         }
-        initializePolygonRightClick();
-        document.getElementById('current-area-box').style.display = 'none';
-        setDrawingMode(null);
-      }
-    }
-
-    function clearMarkers() {
-      symbolMarkers.forEach(m => map.removeLayer(m));
-      symbolMarkers = [];
-    }
-    const contextMenu = document.getElementById('context-menu');
-    let selectedPolygonLayer = null;
-    function setupPolygonRightClick(layer, index) {
-      layer.on('contextmenu', (e) => {
-        e.originalEvent.preventDefault();
-        selectedPolygonLayer = { layer, index };
-        const pos = map.latLngToContainerPoint(e.latlng);
-        contextMenu.style.top = `${pos.y}px`;
-        contextMenu.style.left = `${pos.x}px`;
-        contextMenu.style.display = 'block';
-      });
-    }
-    function initializePolygonRightClick() {
-      polygonLayers.forEach((layer, index) => {
-        setupPolygonRightClick(layer, index);
-      });
-    }
-    document.getElementById('changeColorBtn').onclick = () => {
-      if (selectedPolygonLayer) {
-        const idx = selectedPolygonLayer.index;
-        const currentColor = polygonMeta[idx].color || 'red';
-        const colors = ['#FF0000', '#008000', '#0000FF', '#800080', '#FFA500', '#8B0000', '#00008B'];
-        let newColor = currentColor;
-        while (newColor === currentColor) {
-          newColor = colors[Math.floor(Math.random() * colors.length)];
+        
+        // تحديث الشكل المرسوم
+        function updateShape() {
+            // إزالة المضلع/المنحنى السابق إذا كان موجودًا
+            if (currentLayer) {
+                map.removeLayer(currentLayer);
+            }
+            
+            // إنشاء مجموعة الإحداثيات من العلامات
+            const latlngs = markers.map(marker => marker.getLatLng());
+            
+            // إنشاء المضلع
+            if (drawingMode === 'polygon') {
+                currentLayer = L.polygon(latlngs, {
+                    color: currentColor,
+                    fillOpacity: 0.5,
+                    weight: 2
+                }).addTo(map);
+            }
+            
+            // إذا كان هناك ثلاث علامات أو أكثر، احسب المساحة
+            if (markers.length >= 3 && drawingMode === 'polygon') {
+                calculateArea();
+            }
         }
-        polygonMeta[idx].color = newColor;
-        polygonLayers[idx].setStyle({ color: newColor, fillColor: newColor });
-        updatePolygonList();
-      }
-      contextMenu.style.display = 'none';
-    };
-    document.getElementById('deletePolygonBtn').onclick = () => {
-      if (selectedPolygonLayer) {
-        const idx = selectedPolygonLayer.index;
-        map.removeLayer(polygonLayers[idx]);
-        if (polygonLabels[idx]) map.removeLayer(polygonLabels[idx]);
-        polygonLayers.splice(idx, 1);
-        polygons.splice(idx, 1);
-        polygonMeta.splice(idx, 1);
-        polygonLabels.splice(idx, 1);
-        updatePolygonList();
-      }
-      contextMenu.style.display = 'none';
-      selectedPolygonLayer = null;
-    };
-    function updateAllPolygonLabels() {
-      for (let i = 0; i < polygons.length; i++) {
-        updatePolygonLabel(i);
-      }
-    }
-    map.on('click', () => {
-      contextMenu.style.display = 'none';
-      selectedPolygonLayer = null;
-    });
-    initializePolygonRightClick();
-    setInterval(updateAllPolygonLabels, 1000);
-    map.on("browser-print-start", function() {
-      document.querySelector('.side-panel').style.display = "none";
-    });
-    map.on("browser-print-end", function() {
-      document.querySelector('.side-panel').style.display = "";
-    });
-    window.clearCurrentSelection = clearCurrentSelection;
-    updatePolygonList();
-
-
-async function searchAndDrawCityBoundary(cityName, map) {
-  if (window.cityLayer) {
-    map.removeLayer(window.cityLayer);
-    window.cityLayer = null;
-  }
-  if (window.cityMarker) {
-    map.removeLayer(window.cityMarker);
-    window.cityMarker = null;
-  }
-  // استعلام Overpass API
-  const query = `
-    [out:json];
-    relation
-      ["name"="${cityName}"]
-      ["boundary"="administrative"]
-      ["type"="boundary"];
-    out geom;
-  `;
-  const url = "https://overpass-api.de/api/interpreter?data=" + encodeURIComponent(query);
-
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-
-    if (data.elements && data.elements.length > 0) {
-      const rel = data.elements[0];
-      if (rel.members && rel.members.length > 0) {
-        const coords = rel.members
-          .filter(m => m.type === "way" && m.geometry)
-          .map(m => m.geometry.map(g => [g.lon, g.lat]));
-        const geojson = {
-          type: coords.length > 1 ? "MultiPolygon" : "Polygon",
-          coordinates: coords.length > 1 ? [coords] : [coords[0]]
-        };
-        window.cityLayer = L.geoJSON(geojson, {
-          style: {
-            color: "#0078d4",
-            fillColor: "#60aaff",
-            fillOpacity: 0.25,
-            weight: 3
-          }
-        }).addTo(map);
-
-        // حساب مركز الحدود
-        let center = [rel.center ? rel.center.lat : rel.members[0].geometry[0].lat,
-                      rel.center ? rel.center.lon : rel.members[0].geometry[0].lon];
-        map.fitBounds(window.cityLayer.getBounds());
-
-        // أضف اسم المدينة في المنتصف
-        window.cityMarker = L.marker(center, {
-          icon: L.divIcon({
-            className: 'polygon-label',
-            html: `<div style="background:var(--main-label-bg);color:#0078d4;font-weight:700;font-size:15px;padding:4px 14px;border-radius:10px;">${cityName}</div>`,
-            iconSize: [120, 32],
-            iconAnchor: [60, 16]
-          })
-        }).addTo(map);
-      }
-    } else {
-      alert("لم يتم العثور على حدود المدينة في قاعدة بيانات OpenStreetMap.");
-    }
-  } catch (e) {
-    alert("حدث خطأ أثناء جلب بيانات المدينة.");
-  }
-}
-// تحميل ملف GeoJSON للمدن
-let citiesGeoJson = null;
-fetch('data/cities.geojson')
-  .then(res => res.json())
-  .then(data => { citiesGeoJson = data; });
-
-// البحث عن مدينة وعرض حدودها من الملف المحلي
-function searchAndDrawCityFromLocal(cityName, map) {
-  if (!citiesGeoJson) {
-    alert("لم يتم تحميل بيانات المدن بعد.");
-    return;
-  }
-  // إزالة الحدود السابقة
-  if (window.cityLayer) {
-    map.removeLayer(window.cityLayer);
-    window.cityLayer = null;
-  }
-  if (window.cityMarker) {
-    map.removeLayer(window.cityMarker);
-    window.cityMarker = null;
-  }
-  // ابحث عن المدينة بالاسم (يمكنك تحسين البحث حسب اللغة أو الحقول)
-  const feature = citiesGeoJson.features.find(f =>
-    f.properties.name === cityName || f.properties['name:ar'] === cityName
-  );
-  if (feature) {
-    window.cityLayer = L.geoJSON(feature, {
-      style: {
-        color: "#0078d4",
-        fillColor: "#60aaff",
-        fillOpacity: 0.25,
-        weight: 3
-      }
-    }).addTo(map);
-    map.fitBounds(window.cityLayer.getBounds());
-    // أضف اسم المدينة في المنتصف
-    const center = window.cityLayer.getBounds().getCenter();
-    window.cityMarker = L.marker(center, {
-      icon: L.divIcon({
-        className: 'polygon-label',
-        html: `<div style="background:var(--main-label-bg);color:#0078d4;font-weight:700;font-size:15px;padding:4px 14px;border-radius:10px;">${cityName}</div>`,
-        iconSize: [120, 32],
-        iconAnchor: [60, 16]
-      })
-    }).addTo(map);
-  } else {
-    alert("لم يتم العثور على المدينة في قاعدة البيانات المحلية.");
-  }
-}
-
-// ربط زر البحث بالدالة الجديدة
-document.getElementById('citySearchBtn').onclick = function() {
-  const city = document.getElementById('citySearchInput').value.trim();
-  if (!city) return;
-  searchAndDrawCityFromLocal(city, map);
-};
-document.getElementById('citySearchInput').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    document.getElementById('citySearchBtn').click();
-  }
-});
-// إصلاح منطق إظهار/إخفاء البانلات وأزرارها ليعتمد فقط على الكلاسات (hidden)، وإزالة أي display مباشر
-// زر إظهار البانل الأيسر
-const toggleLeftPanelBtn = document.getElementById('toggleLeftPanelBtn');
-const hideLeftPanelBtn = document.getElementById('hideLeftPanelBtn');
-const leftPanel = document.querySelector('.control-buttons.left');
-toggleLeftPanelBtn.onclick = function() {
-  leftPanel.classList.remove('hidden');
-  toggleLeftPanelBtn.classList.add('hidden');
-  hideLeftPanelBtn.classList.remove('hidden');
-};
-hideLeftPanelBtn.onclick = function(e) {
-  if (e) {
-    e.preventDefault();
-    e.stopPropagation();
-  }
-  leftPanel.classList.add('hidden');
-  toggleLeftPanelBtn.classList.remove('hidden');
-  hideLeftPanelBtn.classList.add('hidden');
-};
-// زر إظهار البانل الأيمن
-const toggleRightPanelBtn = document.getElementById('toggleRightPanelBtn');
-const hideRightPanelBtn = document.getElementById('hideRightPanelBtn');
-const rightPanel = document.querySelector('.side-panel');
-toggleRightPanelBtn.onclick = function() {
-  rightPanel.classList.remove('hidden');
-  toggleRightPanelBtn.classList.add('hidden');
-};
-hideRightPanelBtn.onclick = function(e) {
-  if (e) e.preventDefault();
-  rightPanel.classList.add('hidden');
-  toggleRightPanelBtn.classList.remove('hidden');
-};
-// عند البداية، أخفِ البانلات وأظهر أزرار الإظهار فقط
-window.onload = function() {
-  leftPanel.classList.add('hidden');
-  rightPanel.classList.add('hidden');
-  toggleLeftPanelBtn.classList.remove('hidden');
-  toggleRightPanelBtn.classList.remove('hidden');
-  hideLeftPanelBtn.classList.add('hidden');
-};
-  </script>
+        
+        // حساب المساحة
+        function calculateArea() {
+            if (drawingMode !== 'polygon' || markers.length < 3) return;
+            
+            try {
+                // إنشاء مضلع من إحداثيات العلامات
+                const latlngs = markers.map(marker => marker.getLatLng());
+                
+                // تحويل الإحداثيات إلى [lng, lat] لـ Turf.js
+                const coords = latlngs.map(latlng => [latlng.lng, latlng.lat]);
+                // إغلاق المضلع
+                if (coords[0][0] !== coords[coords.length - 1][0] || coords[0][1] !== coords[coords.length - 1][1]) {
+                    coords.push(coords[0]);
+                }
+                const polygon = turf.polygon([coords]);
+                
+                // حساب المساحة بالمتر المربع
+                const area = turf.area(polygon);
+                
+                // تحويل المساحة إلى كيلومتر مربع
+                const areaKm = area / 1000000;
+                
+                // تحديث عرض المساحة
+                areaValue.textContent = `${area.toFixed(2)} م² (${areaKm.toFixed(6)} كم²)`;
+            } catch (error) {
+                console.error('خطأ في حساب المساحة:', error);
+                areaValue.textContent = 'خطأ في الحساب';
+                showAlert('حدث خطأ أثناء حساب المساحة', 'error');
+            }
+        }
+        
+        // حفظ التحديد
+        function saveSelection() {
+            if (!currentLayer || (drawingMode === 'polygon' && markers.length < 3)) {
+                showAlert('يجب إنشاء مضلع مكون من 3 نقاط على الأقل', 'error');
+                return;
+            }
+            
+            // إخفاء الدبابيس
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            // إعطاء معرف فريد للمضلع
+            currentLayer._id = `polygon-${Date.now()}`;
+            
+            // حفظ المضلع
+            polygons.push(currentLayer);
+            
+            // إضافة التحديد إلى اللوحة
+            addToCurrentSelections();
+            
+            // إعادة تعيين عملية الرسم
+            resetDrawing();
+        }
+        
+        // إضافة عنصر إلى التحديدات الحالية
+        function addToCurrentSelections() {
+            const container = document.getElementById('current-selections');
+            const noSelections = container.querySelector('.no-selections');
+            
+            if (noSelections) {
+                noSelections.remove();
+            }
+            
+            const item = document.createElement('div');
+            item.className = 'panel-item';
+            item.dataset.id = currentLayer._id;
+            
+            // إنشاء لون عشوائي
+            const color = getRandomColor();
+            currentColor = color;
+            
+            item.innerHTML = `
+                <div class="panel-item-title">
+                    <input type="text" value="تحديد ${selectionCounter}" class="selection-name">
+                    <input type="color" class="shape-color" value="${color}">
+                </div>
+                
+                <div class="panel-item-content">
+                    <div class="selection-option">
+                        <input type="checkbox" id="show-name-${currentLayer._id}" class="show-name">
+                        <label for="show-name-${currentLayer._id}">إظهار الاسم على الخريطة</label>
+                    </div>
+                    
+                    <div class="style-control">
+                        <label>الشفافية:</label>
+                        <input type="range" min="0" max="1" step="0.1" class="opacity-slider" value="0.5">
+                    </div>
+                    
+                    <div class="style-control">
+                        <label>نمط التعبئة:</label>
+                        <select class="pattern-select">
+                            <option value="none">بدون</option>
+                            <option value="cross">خطوط متقاطعة</option>
+                            <option value="diagonal">خطوط مائلة</option>
+                            <option value="checker">رقعة شطرنج</option>
+                        </select>
+                    </div>
+                    
+                    <div class="selection-info">
+                        <p><strong>المساحة:</strong> ${areaValue.textContent}</p>
+                        <p><strong>النقاط:</strong> ${markers.length}</p>
+                    </div>
+                </div>
+                
+                <div class="item-actions">
+                    <button class="action-btn edit-btn" data-id="${currentLayer._id}">
+                        <i class="fas fa-edit"></i> تعديل
+                    </button>
+                    <button class="action-btn delete-btn" data-id="${currentLayer._id}">
+                        <i class="fas fa-trash"></i> حذف
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(item);
+            
+            // تحديث لون التحديد
+            currentLayer.setStyle({fillColor: color, color: color});
+            
+            // إضافة أحداث للأزرار
+            const editBtn = item.querySelector('.edit-btn');
+            const deleteBtn = item.querySelector('.delete-btn');
+            editBtn.addEventListener('click', () => editSelection(editBtn.dataset.id));
+            deleteBtn.addEventListener('click', () => deleteSelection(deleteBtn.dataset.id));
+            
+            // إضافة حدث لتغيير اللون
+            const colorInput = item.querySelector('.shape-color');
+            colorInput.addEventListener('input', function() {
+                const polygon = polygons.find(p => p._id === item.dataset.id);
+                if (polygon) {
+                    polygon.setStyle({fillColor: this.value, color: this.value});
+                }
+            });
+            
+            // إضافة حدث لتغيير الشفافية
+            const opacitySlider = item.querySelector('.opacity-slider');
+            opacitySlider.addEventListener('input', function() {
+                const polygon = polygons.find(p => p._id === item.dataset.id);
+                if (polygon) {
+                    polygon.setStyle({fillOpacity: this.value});
+                }
+            });
+            
+            // إضافة حدث لتغيير نمط التعبئة
+            const patternSelect = item.querySelector('.pattern-select');
+            patternSelect.addEventListener('change', function() {
+                console.log(`نمط التعبئة المختار: ${this.value}`);
+            });
+            
+            // إضافة حدث لإظهار الاسم
+            const nameCheckbox = item.querySelector('.show-name');
+            nameCheckbox.addEventListener('change', function() {
+                const polygon = polygons.find(p => p._id === item.dataset.id);
+                const nameInput = item.querySelector('.selection-name');
+                
+                if (this.checked) {
+                    // إزالة التسمية القديمة إذا كانت موجودة
+                    if (nameLabels[item.dataset.id]) {
+                        map.removeLayer(nameLabels[item.dataset.id]);
+                    }
+                    
+                    // إضافة الاسم على الخريطة
+                    const center = polygon.getBounds().getCenter();
+                    const label = L.marker(center, {
+                        icon: L.divIcon({
+                            className: 'map-label',
+                            html: escapeHtml(nameInput.value),
+                            iconSize: [nameInput.value.length * 10 + 20, 30]
+                        }),
+                        draggable: true
+                    }).addTo(map);
+                    
+                    // حفظ المرجع للإزالة لاحقًا
+                    nameLabels[item.dataset.id] = label;
+                    
+                    // حدث لتحريك التسمية
+                    label.on('dragend', function() {
+                        // لا شيء، مجرد السماح بتحريك التسمية
+                    });
+                } else {
+                    // إزالة الاسم من الخريطة
+                    if (nameLabels[item.dataset.id]) {
+                        map.removeLayer(nameLabels[item.dataset.id]);
+                        delete nameLabels[item.dataset.id];
+                    }
+                }
+            });
+            
+            // زيادة العداد
+            selectionCounter++;
+            
+            // إظهار تنبيه بنجاح الإضافة
+            showAlert('تمت إضافة التحديد بنجاح', 'info');
+        }
+        
+        // تعديل التحديد
+        function editSelection(id) {
+            // الخروج من أي وضع رسم سابق
+            resetDrawing();
+            
+            // العثور على العنصر المطلوب
+            const item = document.querySelector(`.panel-item[data-id="${id}"]`);
+            if (!item) return;
+            
+            // العثور على المضلع المطلوب
+            const polygon = polygons.find(p => p._id === id);
+            if (!polygon) return;
+            
+            // تمييز العنصر
+            item.classList.add('edit-mode');
+            
+            // تمييز المضلع على الخريطة
+            polygon.setStyle({weight: 4, dashArray: '5, 10'});
+            
+            // حفظ المضلع الأصلي
+            originalPolygon = L.polygon(polygon.getLatLngs()[0], {
+                color: polygon.options.color,
+                fillOpacity: polygon.options.fillOpacity,
+                weight: polygon.options.weight
+            });
+            
+            // تمكين وضع التحرير
+            editMode = true;
+            currentEditPolygon = polygon;
+            
+            // استخراج النقاط من المضلع
+            const latlngs = polygon.getLatLngs()[0];
+            
+            // إضافة علامات للنقاط
+            latlngs.forEach(latlng => {
+                const marker = L.marker(latlng, {
+                    draggable: true
+                }).addTo(map);
+                
+                markers.push(marker);
+                
+                // تحديث المضلع عند سحب العلامة
+                marker.on('drag', () => {
+                    const newLatLngs = markers.map(m => m.getLatLng());
+                    polygon.setLatLngs([newLatLngs]);
+                    calculateAreaForPolygon(polygon);
+                });
+            });
+            
+            // إظهار منبثق التعديل
+            editPopup.style.display = 'block';
+            calculateAreaForPolygon(polygon);
+        }
+        
+        // تأكيد التعديل
+        function confirmEdit() {
+            if (!editMode) return;
+            
+            // إزالة العلامات
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            // إعادة تعيين نمط المضلع
+            if (currentEditPolygon) {
+                currentEditPolygon.setStyle({weight: 2, dashArray: null});
+            }
+            
+            // إزالة تمييز العنصر
+            document.querySelectorAll('.panel-item').forEach(item => {
+                item.classList.remove('edit-mode');
+            });
+            
+            // إخفاء منبثق التعديل
+            editPopup.style.display = 'none';
+            
+            // إعادة تعيين المتغيرات
+            editMode = false;
+            currentEditPolygon = null;
+            originalPolygon = null;
+            
+            // إظهار تنبيه بنجاح التعديل
+            showAlert('تم حفظ التعديلات بنجاح', 'info');
+        }
+        
+        // التراجع عن التعديل
+        function revertEdit() {
+            if (!editMode) return;
+            
+            // إزالة العلامات
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            // إعادة تعيين المضلع إلى حالته الأصلية
+            if (currentEditPolygon && originalPolygon) {
+                currentEditPolygon.setLatLngs(originalPolygon.getLatLngs());
+                currentEditPolygon.setStyle({weight: 2, dashArray: null});
+            }
+            
+            // إزالة تمييز العنصر
+            document.querySelectorAll('.panel-item').forEach(item => {
+                item.classList.remove('edit-mode');
+            });
+            
+            // إخفاء منبثق التعديل
+            editPopup.style.display = 'none';
+            
+            // إعادة تعيين المتغيرات
+            editMode = false;
+            currentEditPolygon = null;
+            originalPolygon = null;
+            
+            // إظهار تنبيه بالتراجع عن التعديل
+            showAlert('تم التراجع عن التعديلات', 'info');
+        }
+        
+        // حساب مساحة المضلع
+        function calculateAreaForPolygon(polygon) {
+            try {
+                const latlngs = polygon.getLatLngs()[0];
+                
+                // تحويل الإحداثيات إلى [lng, lat] لـ Turf.js
+                const coords = latlngs.map(latlng => [latlng.lng, latlng.lat]);
+                // إغلاق المضلع
+                if (coords[0][0] !== coords[coords.length - 1][0] || coords[0][1] !== coords[coords.length - 1][1]) {
+                    coords.push(coords[0]);
+                }
+                const turfPolygon = turf.polygon([coords]);
+                const area = turf.area(turfPolygon);
+                const areaKm = area / 1000000;
+                
+                areaValue.textContent = `${area.toFixed(2)} م² (${areaKm.toFixed(6)} كم²)`;
+            } catch (error) {
+                console.error('خطأ في حساب مساحة المضلع:', error);
+                areaValue.textContent = 'خطأ في الحساب';
+                showAlert('حدث خطأ أثناء حساب المساحة', 'error');
+            }
+        }
+        
+        // حذف التحديد
+        function deleteSelection(id) {
+            // البحث عن المضلع في المصفوفة
+            const polygonIndex = polygons.findIndex(p => p._id === id);
+            
+            if (polygonIndex !== -1) {
+                // إزالة المضلع من الخريطة
+                map.removeLayer(polygons[polygonIndex]);
+                polygons.splice(polygonIndex, 1);
+            }
+            
+            // إزالة العنصر من اللوحة
+            const item = document.querySelector(`.panel-item[data-id="${id}"]`);
+            if (item) item.remove();
+            
+            // إزالة الاسم المرتبط إذا كان موجودًا
+            if (nameLabels[id]) {
+                map.removeLayer(nameLabels[id]);
+                delete nameLabels[id];
+            }
+            
+            // إذا لم يعد هناك تحديدات، عرض رسالة
+            if (document.querySelectorAll('.panel-item').length === 0) {
+                const container = document.getElementById('current-selections');
+                container.innerHTML = '<div class="no-selections">لا توجد تحديدات حتى الآن</div>';
+            }
+            
+            // إظهار تنبيه بالحذف
+            showAlert('تم حذف التحديد بنجاح', 'info');
+        }
+        
+        // إضافة نص إلى الخريطة
+        function addText() {
+            const center = map.getCenter();
+            
+            const label = L.divIcon({
+                className: 'map-label',
+                html: '<div style="color: #000000;">نص جديد</div>',
+                iconSize: [100, 30]
+            });
+            
+            const marker = L.marker(center, {
+                icon: label,
+                draggable: true
+            }).addTo(map);
+            
+            // إعطاء معرف فريد للنص
+            marker._id = `text-${Date.now()}`;
+            labels.push(marker);
+            
+            // إضافة التحديد إلى اللوحة
+            addTextToSelections(marker);
+        }
+        
+        // إضافة نص إلى لوحة التحديدات
+        function addTextToSelections(marker) {
+            const container = document.getElementById('current-selections');
+            const noSelections = container.querySelector('.no-selections');
+            
+            if (noSelections) {
+                noSelections.remove();
+            }
+            
+            const item = document.createElement('div');
+            item.className = 'panel-item';
+            item.dataset.id = marker._id;
+            
+            item.innerHTML = `
+                <div class="panel-item-title">
+                    <input type="text" value="نص ${selectionCounter}" class="selection-name">
+                    <i class="fas fa-font"></i>
+                </div>
+                
+                <div class="panel-item-content">
+                    <input type="text" value="نص جديد" class="text-content">
+                    <div class="selection-option">
+                        <span>لون النص:</span>
+                        <input type="color" class="text-color" value="#000000">
+                    </div>
+                </div>
+                
+                <div class="item-actions">
+                    <button class="action-btn delete-btn" data-id="${marker._id}">
+                        <i class="fas fa-trash"></i> حذف
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(item);
+            
+            // إضافة أحداث للأزرار
+            const deleteBtn = item.querySelector('.delete-btn');
+            deleteBtn.addEventListener('click', () => {
+                map.removeLayer(marker);
+                labels = labels.filter(l => l._id !== marker._id);
+                item.remove();
+                
+                if (document.querySelectorAll('.panel-item').length === 0) {
+                    const container = document.getElementById('current-selections');
+                    container.innerHTML = '<div class="no-selections">لا توجد تحديدات حتى الآن</div>';
+                }
+                
+                showAlert('تم حذف النص بنجاح', 'info');
+            });
+            
+            // تحديث النص عند التعديل
+            const textInput = item.querySelector('.text-content');
+            textInput.addEventListener('input', function() {
+                const color = item.querySelector('.text-color').value;
+                marker.setIcon(L.divIcon({
+                    className: 'map-label',
+                    html: `<div style="color: ${color};">${escapeHtml(this.value)}</div>`,
+                    iconSize: [this.value.length * 10 + 20, 30]
+                }));
+            });
+            
+            // تحديث لون النص
+            const colorInput = item.querySelector('.text-color');
+            colorInput.addEventListener('input', function() {
+                const text = item.querySelector('.text-content').value;
+                marker.setIcon(L.divIcon({
+                    className: 'map-label',
+                    html: `<div style="color: ${this.value};">${escapeHtml(text)}</div>`,
+                    iconSize: [text.length * 10 + 20, 30]
+                }));
+            });
+            
+            // تحديث اسم التحديد
+            const nameInput = item.querySelector('.selection-name');
+            nameInput.addEventListener('input', function() {
+                // يمكن إضافة وظائف إضافية هنا
+            });
+            
+            selectionCounter++;
+            
+            // إظهار تنبيه بنجاح الإضافة
+            showAlert('تمت إضافة النص بنجاح', 'info');
+        }
+        
+        // إضافة رمز إلى الخريطة
+        function addIcon(type) {
+            const center = map.getCenter();
+            
+            let iconUrl, title;
+            if (type === 'fire') {
+                iconUrl = "ملصقات/دبابة.png";
+                title = 'نار تشتعل';
+            } else if (type === 'soldier') {
+                iconUrl = "ملصقات/جنود.png";
+                title = 'جندي';
+            } else {
+                iconUrl = "ملصقات/طيارة.png";
+                title = 'طائرة';
+            }
+            
+            const icon = L.icon({
+                iconUrl: iconUrl,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            });
+            
+            const marker = L.marker(center, {
+                icon: icon,
+                draggable: true
+            }).addTo(map);
+            
+            // إعطاء معرف فريد للأيقونة
+            marker._id = `icon-${Date.now()}`;
+            marker._type = type;
+            icons.push(marker);
+            
+            // إضافة التحديد إلى اللوحة
+            addIconToSelections(marker, title);
+        }
+        
+        // إضافة رمز إلى لوحة التحديدات
+        function addIconToSelections(marker, title) {
+            const container = document.getElementById('current-selections');
+            const noSelections = container.querySelector('.no-selections');
+            
+            if (noSelections) {
+                noSelections.remove();
+            }
+            
+            const item = document.createElement('div');
+            item.className = 'panel-item';
+            item.dataset.id = marker._id;
+            
+            item.innerHTML = `
+                <div class="panel-item-title">
+                    <span>${title} ${selectionCounter}</span>
+                    <img src="${marker.options.icon.options.iconUrl}" width="24" height="24">
+                </div>
+                
+                <div class="item-actions">
+                    <button class="action-btn delete-btn" data-id="${marker._id}">
+                        <i class="fas fa-trash"></i> حذف
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(item);
+            
+            // إضافة أحداث للأزرار
+            const deleteBtn = item.querySelector('.delete-btn');
+            deleteBtn.addEventListener('click', () => {
+                map.removeLayer(marker);
+                icons = icons.filter(i => i._id !== marker._id);
+                item.remove();
+                
+                if (document.querySelectorAll('.panel-item').length === 0) {
+                    const container = document.getElementById('current-selections');
+                    container.innerHTML = '<div class="no-selections">لا توجد تحديدات حتى الآن</div>';
+                }
+                
+                showAlert('تم حذف الأيقونة بنجاح', 'info');
+            });
+            
+            selectionCounter++;
+            
+            // إظهار تنبيه بنجاح الإضافة
+            showAlert('تمت إضافة الأيقونة بنجاح', 'info');
+        }
+        
+        // البحث عن موقع
+        function searchLocation(query) {
+            if (!query.trim()) {
+                showAlert('يرجى إدخال استعلام بحث', 'error');
+                return;
+            }
+            
+            if (!geoJsonData) {
+                showAlert('بيانات المواقع غير متوفرة حالياً', 'error');
+                return;
+            }
+            
+            // تنظيف الإدخال لمنع XSS
+            const normalizedQuery = escapeHtml(query.trim().toLowerCase());
+            
+            // إزالة نتائج البحث السابقة
+            if (lastSearchPolygon) {
+                map.removeLayer(lastSearchPolygon);
+                lastSearchPolygon = null;
+            }
+            if (lastSearchLabel) {
+                map.removeLayer(lastSearchLabel);
+                lastSearchLabel = null;
+            }
+            currentSearchResult = null; // إعادة تعيين نتيجة البحث
+            
+            let found = false;
+            
+            // البحث في بيانات GeoJSON
+            try {
+                geoJsonData.features.forEach(feature => {
+                    const name = feature.properties.name.toLowerCase();
+                    
+                    if (name.includes(normalizedQuery)) {
+                        found = true;
+                        
+                        // إنشاء مضلع للموقع
+                        const coords = feature.geometry.coordinates[0].map(coord => [coord[1], coord[0]]);
+                        const polygon = L.polygon(coords, {
+                            color: '#00ff00',
+                            fillOpacity: 0.3,
+                            weight: 2
+                        }).addTo(map);
+                        
+                        // إعطاء معرف فريد للمضلع
+                        polygon._id = `search-result-${Date.now()}`;
+                        
+                        // إضافة تسمية في المركز
+                        const center = polygon.getBounds().getCenter();
+                        const label = L.marker(center, {
+                            icon: L.divIcon({
+                                className: 'map-label',
+                                html: escapeHtml(feature.properties.name),
+                                iconSize: [120, 30]
+                            })
+                        }).addTo(map);
+                        
+                        // ضبط الخريطة لتناسب المنطقة
+                        map.fitBounds(polygon.getBounds());
+                        
+                        // حفظ المرجع
+                        lastSearchPolygon = polygon;
+                        lastSearchLabel = label;
+                        currentSearchResult = {
+                            polygon: polygon,
+                            label: label,
+                            name: feature.properties.name,
+                            id: polygon._id
+                        };
+                        
+                        // عرض منبثق البحث
+                        document.getElementById('modal-city-name').textContent = `تم العثور على: ${escapeHtml(feature.properties.name)}`;
+                        document.getElementById('search-modal').style.display = 'block';
+                    }
+                });
+                
+                if (!found) {
+                    showAlert('لم يتم العثور على الموقع المطلوب', 'error');
+                }
+            } catch (error) {
+                console.error('خطأ في البحث:', error);
+                showAlert('حدث خطأ أثناء البحث عن الموقع', 'error');
+            }
+        }
+        
+        // إضافة نتيجة البحث إلى التحديدات
+        function addSearchResultToSelections() {
+            if (!currentSearchResult || !currentSearchResult.polygon) {
+                showAlert('لا توجد نتيجة بحث صالحة لإضافتها', 'error');
+                document.getElementById('search-modal').style.display = 'none';
+                return;
+            }
+            
+            // تغيير لون المضلع من الأخضر إلى اللون العشوائي
+            const color = getRandomColor();
+            currentSearchResult.polygon.setStyle({
+                color: color,
+                fillColor: color
+            });
+            
+            // إضافة المضلع إلى التحديدات
+            polygons.push(currentSearchResult.polygon);
+            
+            // إضافة التحديد إلى اللوحة
+            const container = document.getElementById('current-selections');
+            const noSelections = container.querySelector('.no-selections');
+            
+            if (noSelections) {
+                noSelections.remove();
+            }
+            
+            const item = document.createElement('div');
+            item.className = 'panel-item';
+            item.dataset.id = currentSearchResult.id;
+            
+            item.innerHTML = `
+                <div class="panel-item-title">
+                    <input type="text" value="${escapeHtml(currentSearchResult.name)}" class="selection-name">
+                    <input type="color" class="shape-color" value="${color}">
+                </div>
+                
+                <div class="panel-item-content">
+                    <div class="selection-option">
+                        <input type="checkbox" id="show-name-${currentSearchResult.id}" class="show-name" checked>
+                        <label for="show-name-${currentSearchResult.id}">إظهار الاسم على الخريطة</label>
+                    </div>
+                    
+                    <div class="style-control">
+                        <label>الشفافية:</label>
+                        <input type="range" min="0" max="1" step="0.1" class="opacity-slider" value="0.3">
+                    </div>
+                    
+                    <div class="selection-info">
+                        <p><strong>المدينة:</strong> ${escapeHtml(currentSearchResult.name)}</p>
+                    </div>
+                </div>
+                
+                <div class="item-actions">
+                    <button class="action-btn edit-btn" data-id="${currentSearchResult.id}">
+                        <i class="fas fa-edit"></i> تعديل
+                    </button>
+                    <button class="action-btn delete-btn" data-id="${currentSearchResult.id}">
+                        <i class="fas fa-trash"></i> حذف
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(item);
+            
+            // إضافة أحداث للأزرار
+            const editBtn = item.querySelector('.edit-btn');
+            const deleteBtn = item.querySelector('.delete-btn');
+            editBtn.addEventListener('click', () => editSelection(editBtn.dataset.id));
+            deleteBtn.addEventListener('click', () => deleteSelection(deleteBtn.dataset.id));
+            
+            // إضافة حدث لتغيير اللون
+            const colorInput = item.querySelector('.shape-color');
+            colorInput.addEventListener('input', function() {
+                currentSearchResult.polygon.setStyle({fillColor: this.value, color: this.value});
+            });
+            
+            // إضافة حدث لتغيير الشفافية
+            const opacitySlider = item.querySelector('.opacity-slider');
+            opacitySlider.addEventListener('input', function() {
+                currentSearchResult.polygon.setStyle({fillOpacity: this.value});
+            });
+            
+            // إضافة حدث لإظهار/إخفاء الاسم
+            const nameCheckbox = item.querySelector('.show-name');
+            nameCheckbox.addEventListener('change', function() {
+                if (this.checked) {
+                    if (!currentSearchResult.label) {
+                        const center = currentSearchResult.polygon.getBounds().getCenter();
+                        currentSearchResult.label = L.marker(center, {
+                            icon: L.divIcon({
+                                className: 'map-label',
+                                html: escapeHtml(currentSearchResult.name),
+                                iconSize: [120, 30]
+                            })
+                        }).addTo(map);
+                    }
+                } else {
+                    if (currentSearchResult.label) {
+                        map.removeLayer(currentSearchResult.label);
+                        currentSearchResult.label = null;
+                    }
+                }
+            });
+            
+            // إخفاء منبثق البحث
+            document.getElementById('search-modal').style.display = 'none';
+            
+            // إعادة تعيين نتيجة البحث
+            lastSearchPolygon = null;
+            lastSearchLabel = null;
+            currentSearchResult = null;
+            
+            // زيادة العداد
+            selectionCounter++;
+            
+            // إظهار تنبيه بنجاح الإضافة
+            showAlert('تمت إضافة نتيجة البحث إلى التحديدات', 'info');
+        }
+        
+        // إلغاء نتيجة البحث
+        function cancelSearchResult() {
+            if (lastSearchPolygon) {
+                map.removeLayer(lastSearchPolygon);
+                lastSearchPolygon = null;
+            }
+            if (lastSearchLabel) {
+                map.removeLayer(lastSearchLabel);
+                lastSearchLabel = null;
+            }
+            document.getElementById('search-modal').style.display = 'none';
+            currentSearchResult = null;
+        }
+        
+        // حذف جميع العناصر
+        function deleteAllItems() {
+            if (polygons.length === 0 && labels.length === 0 && icons.length === 0) {
+                showAlert('لا توجد عناصر للحذف', 'info');
+                return;
+            }
+            
+            // تأكيد الحذف
+           /* if (!confirm('هل أنت متأكد من حذف جميع التحديدات؟')) {
+                return;
+            }*/
+            
+            // حذف جميع العلامات من الخريطة
+            markers.forEach(marker => map.removeLayer(marker));
+            polygons.forEach(polygon => {
+                polygon.off();
+                map.removeLayer(polygon);
+            });
+            labels.forEach(label => map.removeLayer(label));
+            icons.forEach(icon => map.removeLayer(icon));
+            
+            // إفراغ المصفوفات
+            markers = [];
+            polygons = [];
+            labels = [];
+            icons = [];
+            
+            // إعادة تعيين الحالة
+            resetDrawing();
+            
+            // تحديث اللوحة
+            const container = document.getElementById('current-selections');
+            container.innerHTML = '<div class="no-selections">لا توجد تحديدات حتى الآن</div>';
+            
+            // إزالة جميع الأسماء
+            Object.values(nameLabels).forEach(label => map.removeLayer(label));
+            nameLabels = {};
+            
+            // إعادة تعيين العداد
+            selectionCounter = 1;
+            
+            // إظهار تنبيه بالحذف
+            showAlert('تم حذف جميع التحديدات بنجاح', 'info');
+        }
+        
+        // تبديل الوضع الداكن/الفاتح
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const themeIcon = document.querySelector('#theme-toggle i');
+            
+            if (document.body.classList.contains('dark-mode')) {
+                themeIcon.className = 'fas fa-sun';
+                localStorage.setItem('theme', 'dark');
+            } else {
+                themeIcon.className = 'fas fa-moon';
+                localStorage.setItem('theme', 'light');
+            }
+        }
+        
+        // تحديث الوضع بناءً على تفضيلات المستخدم
+        function updateThemeBasedOnPreference() {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            const savedTheme = localStorage.getItem('theme');
+            
+            if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                document.body.classList.add('dark-mode');
+                document.querySelector('#theme-toggle i').className = 'fas fa-sun';
+            } else {
+                document.body.classList.remove('dark-mode');
+                document.querySelector('#theme-toggle i').className = 'fas fa-moon';
+            }
+        }
+        
+        // إعادة تعيين عملية الرسم
+        function resetDrawing() {
+            // إزالة المستمعات
+            map.off('click', handleMapClick);
+            
+            // الخروج من وضع التحرير
+            if (editMode) {
+                exitEditMode();
+            }
+            
+            // إخفاء صندوق المساحة
+            currentAreaBox.style.display = 'none';
+            
+            // إزالة العلامات المؤقتة
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            // إزالة الطبقة المؤقتة
+            if (currentLayer && !polygons.includes(currentLayer)) {
+                map.removeLayer(currentLayer);
+            }
+            currentLayer = null;
+            
+            // إعادة تعيين وضع الرسم
+            drawingMode = null;
+        }
+        
+        // إنشاء لون عشوائي
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) {
+                color += letters[Math.floor(Math.random() * 16)];
+            }
+            return color;
+        }
+        
+        // دالة لتنظيف الإدخال لمنع XSS
+        function escapeHtml(unsafe) {
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+        
+        // الخروج من وضع التحرير
+        function exitEditMode() {
+            if (!editMode) return;
+            
+            // إزالة العلامات
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            
+            // إعادة تعيين نمط المضلع
+            if (currentEditPolygon) {
+                currentEditPolygon.setStyle({weight: 2, dashArray: null});
+            }
+            
+            // إزالة تمييز العنصر
+            document.querySelectorAll('.panel-item').forEach(item => {
+                item.classList.remove('edit-mode');
+            });
+            
+            // إخفاء منبثق التعديل
+            editPopup.style.display = 'none';
+            
+            // إعادة تعيين المتغيرات
+            editMode = false;
+            currentEditPolygon = null;
+            originalPolygon = null;
+        }
+        
+        // عرض رسالة تنبيه
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type}`;
+            alertDiv.textContent = message;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                alertDiv.remove();
+            }, 3000);
+        }
+        
+        // تهيئة الخريطة عند تحميل الصفحة
+        window.addEventListener('DOMContentLoaded', initMap);
+    </script>
 </body>
 </html>
